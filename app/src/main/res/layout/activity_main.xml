@@ -6,20 +6,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MainActivity" android:id="@+id/surface_view">
+    <SurfaceView
+            android:layout_width="0dp"
+            android:layout_height="0dp" android:id="@+id/surfaceView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" app:layout_constraintStart_toStartOf="parent"
+    />
     <Button
             android:text="@string/button_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/start_cam" app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.528" android:layout_marginTop="8dp"
-            app:layout_constraintTop_toTopOf="@+id/textureView"/>
-    <TextureView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/textureView" android:layout_marginTop="8dp"
-            app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintVertical_bias="1.0"/>
+            app:layout_constraintHorizontal_bias="0.498"
+            android:layout_marginTop="8dp" app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintVertical_bias="0.886"/>
 </android.support.constraint.ConstraintLayout>
