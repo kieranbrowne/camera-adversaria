@@ -35,6 +35,7 @@ import android.os.Environment
 import android.util.DisplayMetrics
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
+import com.kieranbrowne.cameraadversaria.AdversarialFilter
 
 
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
@@ -119,7 +120,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
             val gpuImage = GPUImage(this)
-            gpuImage.setFilter(GPUImageSepiaToneFilter())
+            gpuImage.setFilter(AdversarialFilter())
             gpuImage.setImage(file)
 
             val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
