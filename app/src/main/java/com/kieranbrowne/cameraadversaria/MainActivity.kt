@@ -30,7 +30,11 @@ import android.widget.Toast
 import android.content.ContentResolver;
 import android.graphics.*
 import android.media.Image
+import android.net.Uri
+import android.os.Environment
 import android.util.DisplayMetrics
+import jp.co.cyberagent.android.gpuimage.GPUImage
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
 
 
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
@@ -77,8 +81,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             Log.d("SIZE", image.width.toString() + "x" + image.height.toString());
 
 
-
-
             var output: FileOutputStream? = null
 
             try {
@@ -109,6 +111,42 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     }
                 }
             }
+
+
+
+            val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+            Log.d("DIR", File(path.toURI()).listFiles().size.toString())
+
+
+            val gpuImage = GPUImage(this)
+            gpuImage.setFilter(GPUImageSepiaToneFilter())
+            gpuImage.setImage(file)
+
+            val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
+
+            Log.d("WIDTH",newBmp.width.toString())
+
+            if(gpuImage != null) {
+
+                val filtered = File(filesDir, "filtered_${timeStamp}.jpg")
+
+
+                output = FileOutputStream(filtered)
+                //output.write(bytes)
+                newBmp?.let {
+                    it.compress(Bitmap.CompressFormat.PNG, 100, output)
+                }
+
+                output.close()
+                //gpuImage.saveToPictures("GPUImage", "ImageWithFilter.jpg", null)
+
+            } else {
+                Log.e("ERROR", "IT was null")
+            }
+
+
+
+
             //image.close();
         } else {
             Log.e("WOAH", "image was null")

@@ -5,8 +5,10 @@ import android.os.Bundle
 //import com.sun.tools.corba.se.idl.Util.getAbsolutePath
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
+import android.os.Environment
 import android.util.Log
 import kotlinx.android.synthetic.main.activity_gallery.*
+import java.io.File
 
 
 class GalleryActivity : AppCompatActivity() {
@@ -29,7 +31,12 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     private fun loadImage() {
+
+        //val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES))
+        //Log.d("DIR", File(path.toURI()).listFiles().size.toString())
+
         val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
+
 
         Log.d("FILE", file)
 
