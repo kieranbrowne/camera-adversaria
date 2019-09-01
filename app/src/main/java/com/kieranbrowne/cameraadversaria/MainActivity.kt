@@ -5,7 +5,6 @@ import android.app.Activity
 import android.os.Bundle
 import android.provider.MediaStore
 import kotlinx.android.synthetic.main.activity_main.*
-import android.graphics.Bitmap
 import android.view.Surface
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraDevice
@@ -23,24 +22,21 @@ import android.content.pm.PackageManager
 import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.media.ImageReader
-import android.graphics.ImageFormat
 import android.Manifest
 import android.view.TextureView
-import android.graphics.SurfaceTexture
 import android.view.SurfaceHolder
 import java.nio.ByteBuffer
 import android.widget.Toast
 import android.content.ContentResolver;
+import android.graphics.*
+import android.media.Image
+import android.util.DisplayMetrics
 
 
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
-    private var textureView: TextureView? = null
     lateinit var previewSurface: Surface
-
-
-
 
     val surfaceReadyCallback = object: SurfaceHolder.Callback {
         override fun surfaceChanged(p0: SurfaceHolder?, p1: Int, p2: Int, p3: Int) { }
@@ -52,33 +48,91 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_main)
 
         surfaceView.holder.addCallback(surfaceReadyCallback)
 
-
-
-
-        //setTextureView() // setup texture surfaces
-
-
-
     }
 
-    private fun checkPermission(): Boolean {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            // Permission is not granted
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                123)
-            return false
+    private fun processImage(image: Image) {
+        if(image != null) {
+
+            val timeStamp: String = java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(java.util.Date())
+
+            val file = File(filesDir, "JPEG_${timeStamp}.png")
+
+
+            Log.d("FILENAME", file.toString());
+            Log.d("NUMPLANES", image.planes.size.toString());
+            val buffer = image.planes[0].buffer
+            val bytes = ByteArray(buffer.remaining())
+
+            Log.d("SIZE", image.width.toString() + "x" + image.height.toString());
+
+
+            val metrics = DisplayMetrics()
+
+            val pixelStride = image.planes[0].pixelStride;
+            val rowStride = image.planes[0].rowStride;
+            val rowPadding = rowStride - pixelStride * image.width;
+
+            var offset = 0;
+            val bitmap = Bitmap.createBitmap(metrics,image.width, image.height, Bitmap.Config.RGBA_F16);
+
+            for(i in 0..image.height-1) {
+                for(j in 0..image.width-1) {
+
+                    val r = buffer.get(offset).toInt()
+                    val g = buffer.get(offset).toInt()
+                    val b = buffer.get(offset).toInt()
+                    bitmap.setPixel(j, i, Color.rgb(255,g,255));
+                    offset += pixelStride
+                }
+                offset += rowPadding;
+            }
+
+
+
+            //Log.d("PLANE", bytes);
+
+
+            var output: FileOutputStream? = null
+
+
+            try {
+
+                output = FileOutputStream(file)
+                //output.write(bytes)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
+
+                Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
+
+            } catch (e: java.io.IOException) {
+                Log.e("ERROR", e.toString())
+            } finally {
+                Log.d("HOWMANYBYTES", bytes.size.toString())
+                //val bm = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                //MediaStore.Images.Media.insertImage(getContentResolver(),bm,"pic.jpg", null);
+                //bm.recycle()
+
+                val files = filesDir.listFiles();
+                Log.d("TEST", "Size: "+ files.size.toString());
+                image.close()
+                output?.let {
+                    try {
+                        it.close()
+
+                    } catch (e: java.io.IOException) {
+                        Log.e("ERROR", e.toString())
+                    }
+                }
+            }
+            //image.close();
         } else {
-            return true
+            Log.e("WOAH", "image was null")
         }
 
     }
@@ -90,7 +144,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             val firstCamera = cameraManager.cameraIdList[0]
 
             val imageReader = ImageReader.newInstance(1080, 1920,
-                ImageFormat.YUV_420_888, 1)
+                ImageFormat.YUV_420_888, 2)
 
             val recordingSurface = imageReader.surface
 
@@ -102,57 +156,12 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                 val image = imageReader.acquireLatestImage()
 
-
-                if(image != null) {
-
-                    val timeStamp: String = java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(java.util.Date())
-
-                    val file = File(filesDir, "JPEG_${timeStamp}.jpg")
-
-
-                    //val uri = android.net.Uri.fromFile(file)
-
-                    val uri = FileProvider.getUriForFile(
-                        this, "com.kieranbrowne.cameraadversaria.provider",
-                        file
-                    )
+                processImage(image)
 
 
 
-                    Log.d("FILENAME", file.toString());
-                    val buffer = image.planes[0].buffer
-                    val bytes = ByteArray(buffer.remaining())
 
-                    var output: FileOutputStream? = null
-
-                    try {
-
-                        output = FileOutputStream(file).apply {
-                            this.write(bytes)
-                        }
-                        Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
-
-                    } catch (e: java.io.IOException) {
-                        Log.e("ERROR", e.toString())
-                    } finally {
-                        Log.d("HOWMANYBYTES", bytes.size.toString())
-                        val bm = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        MediaStore.Images.Media.insertImage(getContentResolver(),bm,"pic.jpg", null);
-                        bm.recycle()
-
-                        val files = filesDir.listFiles();
-                        Log.d("TEST", "Size: "+ files.size.toString());
-                        image.close()
-                        output?.let {
-                            try {
-                                it.close()
-
-                            } catch (e: java.io.IOException) {
-                                Log.e("ERROR", e.toString())
-                            }
-                        }
-                    }
-                }
+                openGallery()
 
             }, null)
 
@@ -188,7 +197,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     // capture
                     val stillRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
                         .apply {
-                            addTarget(previewSurface)
+                            //addTarget(previewSurface)
                             addTarget(recordingSurface)
                         }
 
@@ -204,11 +213,11 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                     addTarget(previewSurface)
                                     //addTarget(recordingSurface)
                                 }
-                            /*session.setRepeatingRequest(
+                            session.setRepeatingRequest(
                                 previewRequestBuilder.build(),
                                 object : CameraCaptureSession.CaptureCallback() {},
                                 null
-                            )*/
+                            )
                             session?.capture(
                                 previewRequestBuilder?.build(),
                                 object : CameraCaptureSession.CaptureCallback() {},
@@ -223,6 +232,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                     object : CameraCaptureSession.CaptureCallback() {},
                                     null
                                 )
+
 
                                 Toast.makeText(this@MainActivity,"Shoot!", Toast.LENGTH_LONG).show()
                             }
@@ -239,6 +249,14 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             //textureView!!.layoutParams = FrameLayout.LayoutParams(previewSize.width, previewSize.height, Gravity.CENTER)
 
         }
+
+    }
+
+    private fun openGallery() {
+
+        val intent = Intent(this@MainActivity, GalleryActivity::class.java)
+
+        startActivity(intent)
 
     }
 
@@ -267,12 +285,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         return swappedDimensions
     }
 
-    private fun setTextureView() {
-        textureView = TextureView(this)
-        textureView!!.surfaceTextureListener = this
-        setContentView(textureView)
-    }
-
     override fun onSurfaceTextureAvailable(surfaceTexture: SurfaceTexture, i: Int, i1: Int) {
 
         previewSurface = Surface(surfaceTexture)
@@ -294,6 +306,25 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
     override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
         // Invoked every time there's a new Camera preview frame.
+    }
+
+
+
+    private fun checkPermission(): Boolean {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED
+            || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Permission is not granted
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                123)
+            return false
+        } else {
+            return true
+        }
+
     }
 
 }
