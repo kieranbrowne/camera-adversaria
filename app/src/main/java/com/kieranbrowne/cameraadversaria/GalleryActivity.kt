@@ -11,14 +11,25 @@ import kotlinx.android.synthetic.main.activity_gallery.*
 
 class GalleryActivity : AppCompatActivity() {
 
-    lateinit var bmp : Bitmap
+    private var index = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
 
+        loadImage()
 
-        val file = filesDir.listFiles()[filesDir.listFiles().size-1].toString()
+        nextButton.setOnClickListener {
+
+            index ++
+
+            loadImage();
+
+        }
+    }
+
+    private fun loadImage() {
+        val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
 
         Log.d("FILE", file)
 
@@ -34,17 +45,15 @@ class GalleryActivity : AppCompatActivity() {
         }
 
         data?.let {
-            Log.d("GALLERYSIZE",it)
+            //Log.d("GALLERYSIZE",it)
         }
 
 
 
         imageView.setImageBitmap(myBitmap)
         //imageView.setImageResource(R.drawable.test);
+
     }
 
-    public fun changeBMP(bitmap : Bitmap) {
-        bmp = bitmap
-    }
 }
 

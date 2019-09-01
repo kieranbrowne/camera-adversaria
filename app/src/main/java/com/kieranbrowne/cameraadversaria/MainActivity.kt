@@ -62,51 +62,30 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val timeStamp: String = java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(java.util.Date())
 
-            val file = File(filesDir, "JPEG_${timeStamp}.png")
+            val file = File(filesDir, "JPEG_${timeStamp}.jpg")
 
 
             Log.d("FILENAME", file.toString());
             Log.d("NUMPLANES", image.planes.size.toString());
             val buffer = image.planes[0].buffer
+            buffer.rewind();
             val bytes = ByteArray(buffer.remaining())
+            image.planes[0].buffer.get(bytes);
+
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
 
             Log.d("SIZE", image.width.toString() + "x" + image.height.toString());
 
 
-            val metrics = DisplayMetrics()
-
-            val pixelStride = image.planes[0].pixelStride;
-            val rowStride = image.planes[0].rowStride;
-            val rowPadding = rowStride - pixelStride * image.width;
-
-            var offset = 0;
-            val bitmap = Bitmap.createBitmap(metrics,image.width, image.height, Bitmap.Config.RGBA_F16);
-
-            for(i in 0..image.height-1) {
-                for(j in 0..image.width-1) {
-
-                    val r = buffer.get(offset).toInt()
-                    val g = buffer.get(offset).toInt()
-                    val b = buffer.get(offset).toInt()
-                    bitmap.setPixel(j, i, Color.rgb(255,g,255));
-                    offset += pixelStride
-                }
-                offset += rowPadding;
-            }
-
-
-
-            //Log.d("PLANE", bytes);
 
 
             var output: FileOutputStream? = null
-
 
             try {
 
                 output = FileOutputStream(file)
                 //output.write(bytes)
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
 
                 Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
 
@@ -143,27 +122,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
             val firstCamera = cameraManager.cameraIdList[0]
 
-            val imageReader = ImageReader.newInstance(1080, 1920,
-                ImageFormat.YUV_420_888, 2)
-
-            val recordingSurface = imageReader.surface
-
-            //surfaceView.holder.setFixedSize(800, 800);
-            previewSurface = surfaceView.holder.surface;
-
-            imageReader.setOnImageAvailableListener({
-                // do something
-
-                val image = imageReader.acquireLatestImage()
-
-                processImage(image)
-
-
-
-
-                openGallery()
-
-            }, null)
 
 
 
@@ -179,9 +137,17 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     // use the camera
                     val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraDevice.id)
 
+                    var imageReader: ImageReader? = null
+
+
+
+
+
+
+
 
                     cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]?.let { streamConfigurationMap ->
-                        streamConfigurationMap.getOutputSizes(ImageFormat.YUV_420_888)?.let { yuvSizes ->
+                        streamConfigurationMap.getOutputSizes(ImageFormat.JPEG)?.let { yuvSizes ->
                             val previewSize = yuvSizes.last()
 
                             // cont.
@@ -191,8 +157,31 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             val rotatedPreviewHeight = if (swappedDimensions) previewSize.width else previewSize.height
                             //textureView!!.layoutParams = android.widget.FrameLayout.LayoutParams(previewSize.width, previewSize.height, android.view.Gravity.CENTER)
                             surfaceView.holder.setFixedSize(rotatedPreviewWidth, rotatedPreviewHeight)
+
+                            imageReader = ImageReader.newInstance(rotatedPreviewWidth*12, rotatedPreviewHeight*12,
+                                ImageFormat.JPEG, 1)
                         }
                     }
+
+
+                    val recordingSurface = imageReader?.surface
+
+                    //surfaceView.holder.setFixedSize(800, 800);
+                    previewSurface = surfaceView.holder.surface;
+                    //previewSurface.setFixedSize(800,800);
+
+                    imageReader?.setOnImageAvailableListener({
+                        // do something
+
+                        val image = imageReader?.acquireLatestImage()
+
+                        image?.let {
+                            processImage(it)
+                        }
+
+                        openGallery()
+
+                    }, null)
 
                     // capture
                     val stillRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
@@ -241,12 +230,10 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
 
+
                     cameraDevice.createCaptureSession(mutableListOf(previewSurface, recordingSurface), captureCallback, null)
                 }
             }, null)
-
-            //val previewSize = mCamera!!.parameters.previewSize
-            //textureView!!.layoutParams = FrameLayout.LayoutParams(previewSize.width, previewSize.height, Gravity.CENTER)
 
         }
 
