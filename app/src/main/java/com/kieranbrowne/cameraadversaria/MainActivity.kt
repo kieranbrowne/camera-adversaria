@@ -84,7 +84,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             var output: FileOutputStream? = null
 
-            try {
+            /*try {
 
                 output = FileOutputStream(file)
                 //output.write(bytes)
@@ -111,7 +111,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                         Log.e("ERROR", e.toString())
                     }
                 }
-            }
+            }*/
 
 
 
@@ -121,7 +121,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val gpuImage = GPUImage(this)
             gpuImage.setFilter(AdversarialFilter())
-            gpuImage.setImage(file)
+            //gpuImage.setImage(file)
 
             val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
 
