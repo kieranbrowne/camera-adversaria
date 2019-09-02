@@ -35,7 +35,10 @@ class GalleryActivity : AppCompatActivity() {
         //val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES))
         //Log.d("DIR", File(path.toURI()).listFiles().size.toString())
 
-        val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
+        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+
+        val file = publicDir.listFiles()[publicDir.listFiles().size - index -1].toString()
 
 
         Log.d("FILE", file)

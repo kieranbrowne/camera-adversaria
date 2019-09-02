@@ -30,6 +30,7 @@ import android.widget.Toast
 import android.content.ContentResolver;
 import android.graphics.*
 import android.media.Image
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
 import android.util.DisplayMetrics
@@ -67,7 +68,13 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val timeStamp: String = java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(java.util.Date())
 
-            val file = File(filesDir, "JPEG_${timeStamp}.jpg")
+            val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+            if (!publicDir.exists()) {
+                publicDir.mkdirs()
+            }
+
+            val file = File(publicDir, "JPEG_${timeStamp}.jpg")
 
 
             Log.d("FILENAME", file.toString());
@@ -125,11 +132,23 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
 
+            MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Hello" , "Test Desc");
+
             Log.d("WIDTH",newBmp.width.toString())
 
             if(gpuImage != null) {
 
-                val filtered = File(filesDir, "filtered_${timeStamp}.jpg")
+                val filtered = File(publicDir, "filtered_${timeStamp}.jpg")
+
+                /*val uri = FileProvider.getUriForFile(
+                    this@MainActivity,
+                    "com.kieranbrowne.cameraadversaria.fileprovider",
+                    filtered)
+
+                Log.d("URI", uri.toString())*/
+
+                //resultIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
 
 
                 output = FileOutputStream(filtered)
@@ -141,9 +160,17 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 output.close()
                 //gpuImage.saveToPictures("GPUImage", "ImageWithFilter.jpg", null)
 
+                MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Title" , "yo");
+
+                //MediaStore.Images.Media.insertImage(ContentResolver cr, String imagePath, String name, String description)
+
+
             } else {
                 Log.e("ERROR", "IT was null")
             }
+
+            //MediaScannerConnection.scanFile(this, arrayOf<String>(File(filesDir, "filtered_${timeStamp}.jpg").toString()), null, null)
+
 
 
 

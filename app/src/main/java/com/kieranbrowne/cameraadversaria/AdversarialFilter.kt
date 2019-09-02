@@ -9,6 +9,9 @@ private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "\n" +
         "uniform sampler2D inputImageTexture;\n" +
         "\n" +
+        "//\tClassic Perlin 2D Noise \n" +
+        "//\tby Stefan Gustavson\n" +
+        "\n"+
         "vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}\n"+
         "vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}\n"+
         "vec4 fade(vec4 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}\n"+
@@ -46,13 +49,15 @@ private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "float n_xy = mix(n_x.x, n_x.y, fade_xy.y);\n"+
         "return 2.3 * n_xy;\n"+
         "}\n"+
-
         "void main()\n" +
         "{\n" +
         "   highp vec4 textureColor = texture2D(inputImageTexture, textureCoordinate);\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*20. + 3050.)*30. + 50.)*.02;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*20.)*47.)*.02;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*20. - 8250.)*53.)*.02;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*20. + 3050.)*30. + 50.)*.03;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*20. + 0000.)*47. - 00.)*.03;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*20. - 8250.)*53. - 00.)*.03;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*10. + 3050.)*30. + 50.)*.02;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*10. + 0000.)*47. - 00.)*.02;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*10. - 8250.)*53. - 00.)*.02;\n" +
         "   \n" +
         "   gl_FragColor = textureColor;\n" +
         "}";
