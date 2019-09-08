@@ -74,7 +74,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 publicDir.mkdirs()
             }
 
-            val file = File(publicDir, "JPEG_${timeStamp}.jpg")
+            val file = File(filesDir, "JPEG_${timeStamp}.jpg")
 
 
             Log.d("FILENAME", file.toString());
@@ -91,7 +91,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             var output: FileOutputStream? = null
 
-            /*try {
+            try {
 
                 output = FileOutputStream(file)
                 //output.write(bytes)
@@ -118,7 +118,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                         Log.e("ERROR", e.toString())
                     }
                 }
-            }*/
+            }
 
 
 
@@ -127,8 +127,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
             val gpuImage = GPUImage(this)
-            gpuImage.setFilter(AdversarialFilter())
-            //gpuImage.setImage(file)
+            gpuImage.setFilter(AdversarialFilter(.05))
+            gpuImage.setImage(file)
 
             val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
 
@@ -138,7 +138,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             if(gpuImage != null) {
 
-                val filtered = File(publicDir, "filtered_${timeStamp}.jpg")
+                val filtered = File(publicDir, "adversarial_"+file.toString().split("/").last())
 
                 /*val uri = FileProvider.getUriForFile(
                     this@MainActivity,

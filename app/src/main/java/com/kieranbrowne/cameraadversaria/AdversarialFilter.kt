@@ -2,12 +2,15 @@ package com.kieranbrowne.cameraadversaria
 
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageAddBlendFilter.ADD_BLEND_FRAGMENT_SHADER
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
+import android.opengl.GLES20;
+import android.util.Log
 
 
 private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "varying highp vec2 textureCoordinate;\n" +
         "\n" +
         "uniform sampler2D inputImageTexture;\n" +
+        "uniform lowp float amp;\n" +
         "\n" +
         "//\tClassic Perlin 2D Noise \n" +
         "//\tby Stefan Gustavson\n" +
@@ -52,14 +55,41 @@ private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "void main()\n" +
         "{\n" +
         "   highp vec4 textureColor = texture2D(inputImageTexture, textureCoordinate);\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*20. + 3050.)*30. + 50.)*.03;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*20. + 0000.)*47. - 00.)*.03;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*20. - 8250.)*53. - 00.)*.03;\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*10. + 3050.)*30. + 50.)*.02;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*10. + 0000.)*47. - 00.)*.02;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*10. - 8250.)*53. - 00.)*.02;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*20. + 3050.)*30. + 50.)*amp;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*20. + 0000.)*47. - 00.)*amp;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*20. - 8250.)*53. - 00.)*amp;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*10. + 3050.)*30. + 50.)*amp;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*10. + 0000.)*47. - 00.)*amp;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*10. - 8250.)*53. - 00.)*amp;\n" +
         "   \n" +
         "   gl_FragColor = textureColor;\n" +
         "}";
 
-class AdversarialFilter : GPUImageFilter(NO_FILTER_VERTEX_SHADER, ADVERSARIAL_SHADER)
+class AdversarialFilter(amp: Double) : GPUImageFilter(NO_FILTER_VERTEX_SHADER, ADVERSARIAL_SHADER)  {
+
+    private var amp = amp
+    private var ampLocation: Int? = null
+
+
+
+
+    override fun onInit() {
+        super.onInit()
+        ampLocation = GLES20.glGetUniformLocation(program, "amp")
+        Log.d("LOC",ampLocation.toString())
+    }
+
+
+    override fun onInitialized() {
+        super.onInitialized()
+        setAmp(amp)
+    }
+
+
+    fun setAmp(amp: Double) {
+        this.amp = amp
+        ampLocation?.let {
+            setFloat(it, this.amp.toFloat())
+        }
+    }
+}

@@ -8,13 +8,21 @@ import android.os.Bundle
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import jp.co.cyberagent.android.gpuimage.GPUImage
 import kotlinx.android.synthetic.main.activity_gallery.*
 import org.tensorflow.lite.Interpreter
 import java.io.*
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import android.widget.Toast
+import android.widget.SeekBar
+import android.widget.SeekBar.OnSeekBarChangeListener
+
+
 
 
 
@@ -37,18 +45,11 @@ class GalleryActivity : AppCompatActivity() {
 
     //imgData.order(ByteOrder.nativeOrder())
 
-    private var tflite: Interpreter? = null
+    private var model: Interpreter? = null
     private var labels: List<String>? = null
-    private var labelProbArray: FloatArray = FloatArray(1001)
 
-    var result = Array(1) { FloatArray(1001) }
 
-    var imgData: ByteBuffer = ByteBuffer.allocateDirect(
-        DIM_BATCH_SIZE
-                * DIM_IMG_SIZE_X
-                * DIM_IMG_SIZE_Y
-                * DIM_PIXEL_SIZE
-                * 4)
+
 
 
     @Throws(IOException::class)
@@ -72,10 +73,10 @@ class GalleryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
 
-        tflite = Interpreter(loadModelFile(this@GalleryActivity))
+        model = Interpreter(loadModelFile(this@GalleryActivity))
         labels = loadLabelList(this@GalleryActivity)
 
-        loadImage()
+        loadImage() // load the lastest image
 
         nextButton.setOnClickListener {
 
@@ -84,27 +85,52 @@ class GalleryActivity : AppCompatActivity() {
             loadImage()
 
         }
+
+        filterSeekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                // TODO Auto-generated method stub
+
+                filterSpinner.alpha = 1.0f
+                val filter = FilterRunnable(this@GalleryActivity, progress/1000.0)
+                Thread(filter).start()
+
+            }
+        })
     }
 
-    private fun predict() {
 
-        tflite?.run(imgData, result)
-
-    }
 
     private fun loadModelFile(activity: Activity): MappedByteBuffer {
         val MODEL_PATH = "mobilenet_v2_1.0_224.tflite"
-        Log.d("working directly before", "this")
-        Log.d("dir", activity.assets.list("./").joinToString())
 
-        val fileDescriptor = activity.getAssets().openFd(MODEL_PATH)
+
+        val fileDescriptor = activity.assets.openFd(MODEL_PATH)
         val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
         val fileChannel = inputStream.channel
 
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, fileDescriptor.startOffset, fileDescriptor.declaredLength)
     }
 
-    private fun loadBitmapAsByteBuffer(bitmap: Bitmap) {
+    private fun loadBitmapAsByteBuffer(bitmap: Bitmap) : ByteBuffer {
+
+        var imgData: ByteBuffer = ByteBuffer.allocateDirect(
+            DIM_BATCH_SIZE
+                    * DIM_IMG_SIZE_X
+                    * DIM_IMG_SIZE_Y
+                    * DIM_PIXEL_SIZE
+                    * 4) // floats are 4 bytes each
+
+        imgData.order(ByteOrder.nativeOrder())
+
         imgData.rewind()
 
         val intValues = IntArray(bitmap.width*bitmap.height)
@@ -115,8 +141,8 @@ class GalleryActivity : AppCompatActivity() {
 
         var idx = 0
 
-        val IMG_MEAN = 128
-        val IMG_STD = 128.0.toFloat()
+        val IMG_MEAN = 128.toFloat()
+        val IMG_STD = 128.0f
         for (x in 0..DIM_IMG_SIZE_X-1) {
             for (y in 0..DIM_IMG_SIZE_Y-1) {
                 val v: Int = intValues[idx++]
@@ -127,8 +153,10 @@ class GalleryActivity : AppCompatActivity() {
             }
         }
 
-
+        return imgData
     }
+
+
 
     private fun loadImage() {
 
@@ -141,36 +169,135 @@ class GalleryActivity : AppCompatActivity() {
         val file = publicDir.listFiles()[publicDir.listFiles().size - index -1].toString()
 
 
-        Log.d("FILE", file)
-
-
         val myBitmap = BitmapFactory.decodeFile(file)
 
-        val data = filesDir.listFiles()[filesDir.listFiles().size-1].readText(Charsets.UTF_8)
 
-        val bm = BitmapFactory.decodeResource(resources, R.drawable.test);
+        //val data = filesDir.listFiles()[filesDir.listFiles().size-1].readText(Charsets.UTF_8)
 
         myBitmap?.let {
             Log.d("GALLERYSIZE",it.width.toString() +"x"+it.height.toString())
         }
 
-        data?.let {
-            //Log.d("GALLERYSIZE",it)
-        }
 
+        val croppedBitmap = Bitmap.createBitmap(myBitmap, 0, 0, kotlin.math.min(myBitmap.width,myBitmap.height), kotlin.math.min(myBitmap.width,myBitmap.height), null, false)
 
-        Log.d("Vals", result.joinToString())
-
-        val croppedBitmap = Bitmap.createBitmap(myBitmap, 0, 0, DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, null, false)
-
+        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
         //croppedBitmap
 
-        loadBitmapAsByteBuffer(croppedBitmap) // load the current image
-        predict()
-        Log.d("Vals", result.joinToString())
 
-        imageView.setImageBitmap(croppedBitmap)
-        //imageView.setImageResource(R.drawable.test);
+
+        val result = Array(1) { FloatArray(1001) }
+
+        model = Interpreter(loadModelFile(this@GalleryActivity))
+
+        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
+
+        model?.close()
+
+
+        //Log.d("Vals", result[0].joinToString())
+
+        var biggest: Float = 0.0.toFloat()
+        var biggestidx = 0
+        for(i in 0.until(result[0].size)) {
+            if(result[0][i] > biggest) {
+                biggest = result[0][i]
+                biggestidx = i
+            }
+        }
+        Log.d("FILE", file)
+        Log.d("biggest", "Prediction is "+labels?.get(biggestidx).toString() +" "+biggest.toString() )
+
+
+        predictedClass.setText(labels?.get(biggestidx).toString())
+
+        imageView.setImageBitmap(myBitmap)
+
+        //filterImage()
+
+    }
+
+    inner class FilterRunnable(context: Context, amp: Double) : Runnable {
+
+        val context = context
+        val amp = amp
+
+        private fun filterImage() {
+
+
+
+            var output: FileOutputStream? = null
+
+            val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+            if (!publicDir.exists()) {
+                publicDir.mkdirs()
+            }
+
+
+            val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
+            val bitmap = BitmapFactory.decodeFile(file)
+
+            val gpuImage = GPUImage(context)
+            gpuImage.setFilter(AdversarialFilter(amp))
+            //gpuImage.setImage(file)
+
+            val filteredBitmap = gpuImage.getBitmapWithFilterApplied(bitmap)
+
+            //MediaStore.Images.Media.insertImage(getContentResolver(), filteredBitmap, "Hello" , "Test Desc");
+
+
+            if(gpuImage != null) {
+
+                val filtered = File(publicDir, "adversarial_"+file.split("/").last())
+
+                /*val uri = FileProvider.getUriForFile(
+                    this@MainActivity,
+                    "com.kieranbrowne.cameraadversaria.fileprovider",
+                    filtered)
+
+                Log.d("URI", uri.toString())*/
+
+                //resultIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+
+
+                output = FileOutputStream(filtered)
+                //output.write(bytes)
+                filteredBitmap?.let {
+                    it.compress(Bitmap.CompressFormat.PNG, 100, output)
+                }
+
+                output.close()
+                //gpuImage.saveToPictures("GPUImage", "ImageWithFilter.jpg", null)
+
+                //MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Title" , "yo");
+
+                //MediaStore.Images.Media.insertImage(ContentResolver cr, String imagePath, String name, String description)
+
+                imageView.setImageBitmap(filteredBitmap)
+
+            } else {
+                Log.e("ERROR", "IT was null")
+            }
+
+            runOnUiThread({
+                filterSpinner.alpha = 0.0f
+                loadImage()
+            })
+
+
+            Log.d("DONE", "done")
+
+
+        }
+
+        override fun run() {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+
+            filterImage()
+
+        }
 
     }
 
