@@ -127,7 +127,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
             val gpuImage = GPUImage(this)
-            gpuImage.setFilter(AdversarialFilter(.05))
+            gpuImage.setFilter(AdversarialFilter(0.0))
             gpuImage.setImage(file)
 
             val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
