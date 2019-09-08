@@ -55,12 +55,12 @@ private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "void main()\n" +
         "{\n" +
         "   highp vec4 textureColor = texture2D(inputImageTexture, textureCoordinate);\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*20. + 3050.)*30. + 50.)*amp;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*20. + 0000.)*47. - 00.)*amp;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*20. - 8250.)*53. - 00.)*amp;\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*10. + 3050.)*30. + 50.)*amp;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*10. + 0000.)*47. - 00.)*amp;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*10. - 8250.)*53. - 00.)*amp;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*35. )*150. + 00.)*amp;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*35. )*150. - 00.)*amp;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*35. )*150. - 00.)*amp;\n" +
+        "   textureColor.g += sin(cnoise(textureCoordinate*20. )*150. + 00.)*amp;\n" +
+        "   textureColor.r += sin(cnoise(textureCoordinate*20. )*150. - 00.)*amp;\n" +
+        "   textureColor.b += sin(cnoise(textureCoordinate*20. )*150. - 00.)*amp;\n" +
         "   \n" +
         "   gl_FragColor = textureColor;\n" +
         "}";

@@ -100,7 +100,7 @@ class GalleryActivity : AppCompatActivity() {
                 // TODO Auto-generated method stub
 
                 filterSpinner.alpha = 1.0f
-                val filter = FilterRunnable(this@GalleryActivity, progress/1000.0)
+                val filter = FilterRunnable(this@GalleryActivity, (progress/100.0)*(progress/200.0))
                 Thread(filter).start()
 
             }

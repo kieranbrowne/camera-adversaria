@@ -45,6 +45,6 @@
             app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="0.95" android:max="100"
             style="@android:style/Widget.Material.SeekBar" android:progressTint="#FFFFFF" android:scaleX="2"
-            android:scaleY="2" android:progress="5" android:paddingLeft="18dip" android:paddingRight="18dip"
+            android:scaleY="2" android:progress="1" android:paddingLeft="18dip" android:paddingRight="18dip"
             android:layout_marginBottom="8dp" android:layout_marginTop="8dp"/>
 </android.support.constraint.ConstraintLayout>
