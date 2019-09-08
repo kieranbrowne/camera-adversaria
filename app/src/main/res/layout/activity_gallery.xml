@@ -32,8 +32,8 @@
             android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="parent"/>
     <TextView
             android:text="Prediction"
-            android:layout_width="96dp"
-            android:layout_height="51dp"
+            android:layout_width="286dp"
+            android:layout_height="50dp"
             android:id="@+id/predictedClass" android:textColor="#FFFFFF"
             app:layout_constraintStart_toStartOf="@+id/imageView" android:layout_marginStart="44dp"
             app:layout_constraintTop_toTopOf="parent" android:layout_marginTop="64dp"/>

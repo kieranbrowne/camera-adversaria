@@ -209,7 +209,7 @@ class GalleryActivity : AppCompatActivity() {
         Log.d("biggest", "Prediction is "+labels?.get(biggestidx).toString() +" "+biggest.toString() )
 
 
-        predictedClass.setText(labels?.get(biggestidx).toString())
+        predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
 
         imageView.setImageBitmap(myBitmap)
 
