@@ -86,6 +86,13 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
 
+            val matrix = Matrix()
+
+            matrix.postRotate(90.toFloat())
+            val rotatedBitmap = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
+
+
+
             Log.d("SIZE", image.width.toString() + "x" + image.height.toString());
 
 
@@ -95,7 +102,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                 output = FileOutputStream(file)
                 //output.write(bytes)
-                bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
+                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
 
                 Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
 
@@ -153,8 +160,11 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                 output = FileOutputStream(filtered)
                 //output.write(bytes)
+
                 newBmp?.let {
-                    it.compress(Bitmap.CompressFormat.PNG, 100, output)
+                    val rotatedBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)
+
+                    rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
                 }
 
                 output.close()

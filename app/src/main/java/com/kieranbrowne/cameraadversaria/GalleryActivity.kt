@@ -7,6 +7,7 @@ import android.os.Bundle
 //import com.sun.tools.corba.se.idl.Util.getAbsolutePath
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -274,6 +275,8 @@ class GalleryActivity : AppCompatActivity() {
                 //MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Title" , "yo");
 
                 //MediaStore.Images.Media.insertImage(ContentResolver cr, String imagePath, String name, String description)
+
+
 
                 imageView.setImageBitmap(filteredBitmap)
 
