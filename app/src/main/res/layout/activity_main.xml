@@ -13,14 +13,35 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.0" app:layout_constraintStart_toStartOf="parent"
-    />
-    <Button
-            android:text="@string/button_text"
+            android:layout_marginBottom="132dp"/>
+    <View
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/start_cam" app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.498"
-            android:layout_marginTop="8dp" app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintVertical_bias="0.886"/>
+            android:layout_height="0dp"
+            android:id="@+id/controls"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintTop_toBottomOf="@id/surfaceView"
+            android:background="@color/colorPrimaryDark" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/surfaceView" app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintVertical_bias="0.0"/>
+    <ImageView
+            android:layout_width="60dp"
+            android:layout_height="69dp" tools:src="@tools:sample/avatars"
+            android:id="@+id/open_gallery"
+            tools:layout_editor_absoluteY="631dp" tools:layout_editor_absoluteX="316dp"/>
+    <ImageView
+            android:src="@drawable/circle"
+            android:layout_width="115dp"
+            android:layout_height="110dp"
+            android:id="@+id/start_cam"
+            app:layout_constraintBottom_toBottomOf="@+id/controls"
+            app:layout_constraintStart_toStartOf="@+id/controls"
+            app:layout_constraintTop_toTopOf="@+id/controls" app:layout_constraintEnd_toEndOf="@+id/controls"
+    />
+    <ImageView
+            android:src="@drawable/flip"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/imageView3" app:layout_constraintStart_toStartOf="@+id/controls"
+            android:layout_marginStart="8dp" app:layout_constraintEnd_toStartOf="@+id/start_cam"
+            android:layout_marginEnd="8dp" app:layout_constraintTop_toTopOf="@id/controls"
+            android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="@id/controls"/>
 </android.support.constraint.ConstraintLayout>
