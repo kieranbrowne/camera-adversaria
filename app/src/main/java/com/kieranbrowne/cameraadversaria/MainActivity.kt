@@ -261,7 +261,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         val publicDir = safeGetPublicDir()
 
         // private version
-        val private_file = File(filesDir, "JPEG_${timeStamp}.png")
+        val private_file = File(filesDir, "JPEG_${timeStamp}.jpg")
 
         val bmp = rotateBitmap(imageToBitmap(image), 0.toFloat())
 
@@ -270,11 +270,19 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             try {
 
                 output = FileOutputStream(private_file)
-                val exif =  android.media.ExifInterface(private_file.toString())
-                //exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
-                //exif.saveAttributes()
 
-                bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
+
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, output);
+
+                val exif =  android.media.ExifInterface(private_file.toString())
+                if (rotation == 90.toFloat())
+                    exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_90.toString())
+                else if (rotation == 180.toFloat())
+                    exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_180.toString())
+                else if (rotation == 270.toFloat())
+                    exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
+                exif.saveAttributes()
+
                 Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
 
             } catch (e: java.io.IOException) {
