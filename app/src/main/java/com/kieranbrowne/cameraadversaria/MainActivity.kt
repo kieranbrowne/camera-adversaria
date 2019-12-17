@@ -150,9 +150,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                         }
 
-                        //openGallery()
-
-
                     }, null)
 
                     // capture
@@ -214,15 +211,10 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                         }
                     }
 
-
-
-
                     cameraDevice.createCaptureSession(mutableListOf(previewSurface, recordingSurface), captureCallback, null)
                 }
             }, null)
-
         }
-
     }
 
     private fun openGallery() {
@@ -269,7 +261,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         val publicDir = safeGetPublicDir()
 
         // private version
-        val private_file = File(filesDir, "JPEG_${timeStamp}.jpg")
+        val private_file = File(filesDir, "JPEG_${timeStamp}.png")
 
         val bmp = rotateBitmap(imageToBitmap(image), 0.toFloat())
 
@@ -278,27 +270,19 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             try {
 
                 output = FileOutputStream(private_file)
-                //output.write(bytes)
+                val exif =  android.media.ExifInterface(private_file.toString())
+                //exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
+                //exif.saveAttributes()
+
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
                 Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
 
             } catch (e: java.io.IOException) {
                 Log.e("ERROR", e.toString())
             } finally {
-                //val bm = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                //MediaStore.Images.Media.insertImage(getContentResolver(),bm,"pic.jpg", null);
-                //bm.recycle()
 
                 val files = filesDir.listFiles();
-                image.close()
-                output?.let {
-                    try {
-                        it.close()
-
-                    } catch (e: java.io.IOException) {
-                        Log.e("ERROR", e.toString())
-                    }
-                }
+                output?.close()
             }
 
 
@@ -308,15 +292,11 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val adversarial_image = gpuImage.getBitmapWithFilterApplied(bmp)
 
-            // seems like this should be unnecessary but I'm not sure
-            //MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Untitled" , "Camera Advseraria image");
-
             if(gpuImage != null) {
 
                 val adversarial_file = File(publicDir, "adversarial_"+private_file.toString().split("/").last())
 
                 output = FileOutputStream(adversarial_file)
-                //output.write(bytes)
 
                 adversarial_image?.let {
                     val rotatedBitmap = rotateBitmap(it, rotation)
@@ -325,22 +305,14 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                 output.close()
 
-
                 MediaStore.Images.Media.insertImage(getContentResolver(), adversarial_file.toString(), "Untitled" , "Camera Adversaria image");
-
 
 
             } else {
                 Log.e("ERROR", "IT was null")
             }
 
-            //MediaScannerConnection.scanFile(this, arrayOf<String>(File(filesDir, "filtered_${timeStamp}.jpg").toString()), null, null)
-
-
-
-
-
-            //image.close();
+            image.close();
     }
 
     private fun areDimensionsSwapped(displayRotation: Int, cameraCharacteristics: CameraCharacteristics): Boolean {
@@ -410,8 +382,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         } else {
             return true
         }
-
     }
-
 }
 

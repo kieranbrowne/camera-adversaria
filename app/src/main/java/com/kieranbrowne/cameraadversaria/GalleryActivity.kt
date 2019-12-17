@@ -125,8 +125,6 @@ class GalleryActivity : AppCompatActivity() {
         val intValues = IntArray(bitmap.width*bitmap.height)
 
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        Log.d("SIZE",intValues.size.toString())
-        Log.d("SIZE",bitmap.width.toString())
 
         var idx = 0
 
