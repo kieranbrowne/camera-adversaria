@@ -118,7 +118,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             surfaceView.holder.setFixedSize(rotatedPreviewWidth, rotatedPreviewHeight)
 
                             imageReader = ImageReader.newInstance(rotatedPreviewWidth*12, rotatedPreviewHeight*12,
-                                ImageFormat.JPEG, 1) // TODO
+                                ImageFormat.JPEG, 3)
                         }
                     }
 
@@ -264,8 +264,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
     private fun processImage(image: Image, rotation: Float) {
 
-        Log.d("ROTATION", rotation.toString())
-
         val timeStamp = dateString(java.util.Date())
 
         val publicDir = safeGetPublicDir()
@@ -292,7 +290,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 //bm.recycle()
 
                 val files = filesDir.listFiles();
-                Log.d("TEST", "Size: "+ files.size.toString());
                 image.close()
                 output?.let {
                     try {
@@ -380,7 +377,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     }
 
     override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-        Log.d("THISMIGHTBETHEPROBLEM", "1")
         return true
     }
 
@@ -392,9 +388,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     fun displayLatestImageThumb() {
 
         val THUMBSIZE : Int = 64;
-        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
 
-        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(publicDir.listFiles()[publicDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
+        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filesDir.listFiles()[filesDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
 
         open_gallery.setImageBitmap(thumbImage);
 

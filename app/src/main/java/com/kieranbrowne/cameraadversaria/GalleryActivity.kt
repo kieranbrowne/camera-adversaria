@@ -31,26 +31,14 @@ class GalleryActivity : AppCompatActivity() {
 
     private var index = 0
 
-
-
     val DIM_IMG_SIZE_X = 224
     val DIM_IMG_SIZE_Y = 224
     val DIM_PIXEL_SIZE = 3
     val DIM_BATCH_SIZE = 1
 
 
-    //protected var imgData: ByteBuffer? = null
-
-
-
-
-    //imgData.order(ByteOrder.nativeOrder())
-
     private var model: Interpreter? = null
     private var labels: List<String>? = null
-
-
-
 
 
     @Throws(IOException::class)
@@ -154,6 +142,7 @@ class GalleryActivity : AppCompatActivity() {
             }
         }
 
+
         return imgData
     }
 
@@ -172,7 +161,6 @@ class GalleryActivity : AppCompatActivity() {
 
         model?.close()
 
-        //Log.d("Vals", result[0].joinToString())
 
         var biggest: Float = 0.0.toFloat()
         var biggestidx = 0
@@ -183,51 +171,34 @@ class GalleryActivity : AppCompatActivity() {
             }
         }
 
-        Log.d("biggest", "Prediction is "+labels?.get(biggestidx).toString() +" "+biggest.toString() )
-
-
         predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
     }
 
 
     private fun loadImage() {
 
-        //val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES))
-        //Log.d("DIR", File(path.toURI()).listFiles().size.toString())
-
         val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
 
 
-        val file = publicDir.listFiles()[publicDir.listFiles().size - index -1].toString()
+        val private_file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
 
 
         try {
-            val myBitmap = BitmapFactory.decodeFile(file)
+            // try to load filtered image but fall back if not present
+            val filtered_file = File(publicDir, "adversarial_"+private_file.split("/").last())
+            val adversarial_image = BitmapFactory.decodeFile(filtered_file.toString())
 
-            //val data = filesDir.listFiles()[filesDir.listFiles().size-1].readText(Charsets.UTF_8)
+            runModelPrediction(adversarial_image)
 
-            myBitmap?.let {
-                Log.d("GALLERYSIZE",it.width.toString() +"x"+it.height.toString())
-            }
-
-            runModelPrediction(myBitmap)
-
-
-            imageView.setImageBitmap(myBitmap)
+            imageView.setImageBitmap(adversarial_image)
 
 
         } catch (e : java.lang.Exception) {
-            Log.d("FUCK", "1")
 
-            val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
+            val private_bmp = BitmapFactory.decodeFile(private_file)
 
-            val myBitmap = BitmapFactory.decodeFile(file)
-
-            imageView.setImageBitmap(myBitmap)
+            imageView.setImageBitmap(private_bmp)
         }
-
-
-        //filterImage()
 
     }
 
@@ -265,33 +236,16 @@ class GalleryActivity : AppCompatActivity() {
 
                 val filtered = File(publicDir, "adversarial_"+file.split("/").last())
 
-                /*val uri = FileProvider.getUriForFile(
-                    this@MainActivity,
-                    "com.kieranbrowne.cameraadversaria.fileprovider",
-                    filtered)
-
-                Log.d("URI", uri.toString())*/
-
-                //resultIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-
 
                 output = FileOutputStream(filtered)
-                //output.write(bytes)
+
                 filteredBitmap?.let {
                     it.compress(Bitmap.CompressFormat.PNG, 100, output)
                 }
 
                 output.close()
-                //gpuImage.saveToPictures("GPUImage", "ImageWithFilter.jpg", null)
 
-                //MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Title" , "yo");
-
-                //MediaStore.Images.Media.insertImage(ContentResolver cr, String imagePath, String name, String description)
-
-
-
-                imageView.setImageBitmap(filteredBitmap)
+                //imageView.setImageBitmap(filteredBitmap)
 
             } else {
                 Log.e("ERROR", "IT was null")
@@ -301,10 +255,6 @@ class GalleryActivity : AppCompatActivity() {
                 filterSpinner.alpha = 0.0f
                 loadImage()
             })
-
-
-            Log.d("DONE", "done")
-
 
         }
 
