@@ -31,6 +31,7 @@ import android.content.ContentResolver;
 import android.graphics.*
 import android.media.Image
 import android.media.MediaScannerConnection
+import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Environment
 import android.util.DisplayMetrics
@@ -41,6 +42,8 @@ import com.kieranbrowne.cameraadversaria.AdversarialFilter
 
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
+
+    var isRearCam : Boolean = true;
 
     lateinit var previewSurface: Surface
 
@@ -61,7 +64,16 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         surfaceView.holder.addCallback(surfaceReadyCallback)
 
+        val THUMBSIZE : Int = 64;
+        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(publicDir.listFiles()[publicDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
+
+        open_gallery.setImageBitmap(thumbImage);
+
     }
+
+
 
     private fun processImage(image: Image) {
         if(image != null) {
@@ -90,10 +102,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             matrix.postRotate(90.toFloat())
             val rotatedBitmap = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
-
-
-
-            Log.d("SIZE", image.width.toString() + "x" + image.height.toString());
 
 
             var output: FileOutputStream? = null
@@ -196,12 +204,18 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         if(checkPermission()) {
 
             val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            val firstCamera = cameraManager.cameraIdList[0]
 
+            if(cameraManager.cameraIdList.size < 1)
+                return;
 
+            var currentCamera = cameraManager.cameraIdList[0]
 
+            if(!isRearCam) {
+                if(cameraManager.cameraIdList.size > 1)
+                    currentCamera = cameraManager.cameraIdList[1]
+            }
 
-            cameraManager.openCamera(firstCamera, object : CameraDevice.StateCallback() {
+            cameraManager.openCamera(currentCamera, object : CameraDevice.StateCallback() {
                 override fun onDisconnected(cameraDevice: CameraDevice) {
                     cameraDevice.close()
                 }
@@ -214,10 +228,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraDevice.id)
 
                     var imageReader: ImageReader? = null
-
-
-
-
 
 
 
@@ -298,8 +308,18 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                     null
                                 )
 
-
                                 Toast.makeText(this@MainActivity,"Shoot!", Toast.LENGTH_LONG).show()
+                            }
+
+                            flip_cam.setOnClickListener {
+
+                                Toast.makeText(this@MainActivity,"Flip!", Toast.LENGTH_LONG).show()
+
+                                isRearCam = !isRearCam // flip cam
+
+                                cameraDevice.close()
+
+                                openCamera()
                             }
                         }
                     }
@@ -352,7 +372,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         previewSurface = Surface(surfaceTexture)
 
-        openCamera()
+         openCamera()
 
     }
 

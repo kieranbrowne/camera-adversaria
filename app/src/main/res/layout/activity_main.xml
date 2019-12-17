@@ -26,11 +26,14 @@
             android:layout_width="60dp"
             android:layout_height="69dp" tools:src="@tools:sample/avatars"
             android:id="@+id/open_gallery"
-            tools:layout_editor_absoluteY="631dp" tools:layout_editor_absoluteX="316dp"/>
+            app:layout_constraintEnd_toEndOf="@+id/controls"
+            android:layout_marginEnd="8dp" app:layout_constraintStart_toEndOf="@+id/start_cam"
+            android:layout_marginStart="8dp" app:layout_constraintBottom_toBottomOf="@id/controls"
+            android:layout_marginTop="8dp" app:layout_constraintTop_toTopOf="@+id/controls"/>
     <ImageView
             android:src="@drawable/circle"
-            android:layout_width="115dp"
-            android:layout_height="110dp"
+            android:layout_width="130dp"
+            android:layout_height="130dp"
             android:id="@+id/start_cam"
             app:layout_constraintBottom_toBottomOf="@+id/controls"
             app:layout_constraintStart_toStartOf="@+id/controls"
@@ -38,9 +41,9 @@
     />
     <ImageView
             android:src="@drawable/flip"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:id="@+id/imageView3" app:layout_constraintStart_toStartOf="@+id/controls"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:id="@+id/flip_cam" app:layout_constraintStart_toStartOf="@+id/controls"
             android:layout_marginStart="8dp" app:layout_constraintEnd_toStartOf="@+id/start_cam"
             android:layout_marginEnd="8dp" app:layout_constraintTop_toTopOf="@id/controls"
             android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="@id/controls"/>
