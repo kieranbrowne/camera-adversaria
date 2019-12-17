@@ -73,16 +73,12 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     }
 
 
-
-
-
-
     private fun openCamera() {
         if(checkPermission()) {
 
             val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-            if(cameraManager.cameraIdList.size < 1)
+            if(cameraManager.cameraIdList.size < 1) // if no cameras present
                 return;
 
             var currentCamera = cameraManager.cameraIdList[0]
@@ -122,7 +118,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             surfaceView.holder.setFixedSize(rotatedPreviewWidth, rotatedPreviewHeight)
 
                             imageReader = ImageReader.newInstance(rotatedPreviewWidth*12, rotatedPreviewHeight*12,
-                                ImageFormat.JPEG, 1)
+                                ImageFormat.JPEG, 1) // TODO
                         }
                     }
 
@@ -144,13 +140,12 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             buffer.get(bytes)
                             val bitmapImage : Bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null);
                             val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(bitmapImage, 64, 64);
-                            open_gallery.setImageBitmap(thumbImage);
+                            open_gallery.setImageBitmap(rotateBitmap(thumbImage, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat()));
 
 
 
                             processImage(it,
-                                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat() -
-                                    windowManager.defaultDisplay.rotation.toFloat() - 90.0.toFloat())
+                                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat())
 
 
                         }
@@ -263,7 +258,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     private fun rotateBitmap(bmp : Bitmap, degrees: Float) : Bitmap {
         val matrix = Matrix()
         matrix.postRotate(degrees)
-        return Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
+        val rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
+        return rotated
     }
 
     private fun processImage(image: Image, rotation: Float) {
@@ -274,18 +270,18 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         val publicDir = safeGetPublicDir()
 
-        val file = File(filesDir, "JPEG_${timeStamp}.jpg")
+        // private version
+        val private_file = File(filesDir, "JPEG_${timeStamp}.jpg")
 
-        val bmp = rotateBitmap(imageToBitmap(image), rotation)
+        val bmp = rotateBitmap(imageToBitmap(image), 0.toFloat())
 
         var output: FileOutputStream? = null
 
             try {
 
-                output = FileOutputStream(file)
+                output = FileOutputStream(private_file)
                 //output.write(bytes)
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
-
                 Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
 
             } catch (e: java.io.IOException) {
@@ -309,29 +305,23 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             }
 
 
-
-            val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-            Log.d("DIR", File(path.toURI()).listFiles().size.toString())
-
-
             val gpuImage = GPUImage(this)
             gpuImage.setFilter(AdversarialFilter(0.0))
-            gpuImage.setImage(file)
+            gpuImage.setImage(private_file)
 
-            val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
+            val adversarial_image = gpuImage.getBitmapWithFilterApplied(bmp)
 
-            MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Untitled" , "Camera Advseraria image");
-
-            Log.d("WIDTH",newBmp.width.toString())
+            // seems like this should be unnecessary but I'm not sure
+            //MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Untitled" , "Camera Advseraria image");
 
             if(gpuImage != null) {
 
-                val filtered = File(publicDir, "adversarial_"+file.toString().split("/").last())
+                val adversarial_file = File(publicDir, "adversarial_"+private_file.toString().split("/").last())
 
-                output = FileOutputStream(filtered)
+                output = FileOutputStream(adversarial_file)
                 //output.write(bytes)
 
-                newBmp?.let {
+                adversarial_image?.let {
                     val rotatedBitmap = rotateBitmap(it, rotation)
                     rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
                 }
@@ -339,7 +329,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 output.close()
 
 
-                MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Untitled" , "Camera Adversaria image");
+                MediaStore.Images.Media.insertImage(getContentResolver(), adversarial_file.toString(), "Untitled" , "Camera Adversaria image");
 
 
 

@@ -162,7 +162,7 @@ class GalleryActivity : AppCompatActivity() {
 
         val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
         //croppedBitmap
-        
+
 
         val result = Array(1) { FloatArray(1001) }
 

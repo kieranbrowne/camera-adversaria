@@ -23,13 +23,15 @@
             app:layout_constraintEnd_toEndOf="@+id/surfaceView" app:layout_constraintHorizontal_bias="1.0"
             app:layout_constraintVertical_bias="0.0"/>
     <ImageView
-            android:layout_width="60dp"
-            android:layout_height="69dp" tools:src="@tools:sample/avatars"
+            android:layout_width="40dp"
+            android:layout_height="45dp" tools:src="@tools:sample/avatars"
             android:id="@+id/open_gallery"
             app:layout_constraintEnd_toEndOf="@+id/controls"
             android:layout_marginEnd="8dp" app:layout_constraintStart_toEndOf="@+id/start_cam"
             android:layout_marginStart="8dp" app:layout_constraintBottom_toBottomOf="@id/controls"
-            android:layout_marginTop="8dp" app:layout_constraintTop_toTopOf="@+id/controls"/>
+            app:layout_constraintTop_toTopOf="@+id/controls"
+            app:layout_constraintVertical_bias="0.443"
+            android:layout_marginTop="8dp"/>
     <ImageView
             android:src="@drawable/circle"
             android:layout_width="130dp"
@@ -46,5 +48,5 @@
             android:id="@+id/flip_cam" app:layout_constraintStart_toStartOf="@+id/controls"
             android:layout_marginStart="8dp" app:layout_constraintEnd_toStartOf="@+id/start_cam"
             android:layout_marginEnd="8dp" app:layout_constraintTop_toTopOf="@id/controls"
-            android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="@id/controls"/>
+            app:layout_constraintBottom_toBottomOf="@id/controls"/>
 </android.support.constraint.ConstraintLayout>
