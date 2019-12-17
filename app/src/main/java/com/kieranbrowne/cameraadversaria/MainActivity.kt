@@ -38,6 +38,7 @@ import android.util.DisplayMetrics
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
 import com.kieranbrowne.cameraadversaria.AdversarialFilter
+import java.lang.Exception
 
 
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
@@ -64,141 +65,17 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         surfaceView.holder.addCallback(surfaceReadyCallback)
 
-        val THUMBSIZE : Int = 64;
-        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
-
-        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(publicDir.listFiles()[publicDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
-
-        open_gallery.setImageBitmap(thumbImage);
-
-    }
-
-
-
-    private fun processImage(image: Image) {
-        if(image != null) {
-
-            val timeStamp: String = java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(java.util.Date())
-
-            val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
-
-            if (!publicDir.exists()) {
-                publicDir.mkdirs()
-            }
-
-            val file = File(filesDir, "JPEG_${timeStamp}.jpg")
-
-
-            Log.d("FILENAME", file.toString());
-            Log.d("NUMPLANES", image.planes.size.toString());
-            val buffer = image.planes[0].buffer
-            buffer.rewind();
-            val bytes = ByteArray(buffer.remaining())
-            image.planes[0].buffer.get(bytes);
-
-            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
-
-            val matrix = Matrix()
-
-            matrix.postRotate(90.toFloat())
-            val rotatedBitmap = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
-
-
-            var output: FileOutputStream? = null
-
-            try {
-
-                output = FileOutputStream(file)
-                //output.write(bytes)
-                rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
-
-                Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
-
-            } catch (e: java.io.IOException) {
-                Log.e("ERROR", e.toString())
-            } finally {
-                Log.d("HOWMANYBYTES", bytes.size.toString())
-                //val bm = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                //MediaStore.Images.Media.insertImage(getContentResolver(),bm,"pic.jpg", null);
-                //bm.recycle()
-
-                val files = filesDir.listFiles();
-                Log.d("TEST", "Size: "+ files.size.toString());
-                image.close()
-                output?.let {
-                    try {
-                        it.close()
-
-                    } catch (e: java.io.IOException) {
-                        Log.e("ERROR", e.toString())
-                    }
-                }
-            }
-
-
-
-            val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-            Log.d("DIR", File(path.toURI()).listFiles().size.toString())
-
-
-            val gpuImage = GPUImage(this)
-            gpuImage.setFilter(AdversarialFilter(0.0))
-            gpuImage.setImage(file)
-
-            val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
-
-            MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Hello" , "Test Desc");
-
-            Log.d("WIDTH",newBmp.width.toString())
-
-            if(gpuImage != null) {
-
-                val filtered = File(publicDir, "adversarial_"+file.toString().split("/").last())
-
-                /*val uri = FileProvider.getUriForFile(
-                    this@MainActivity,
-                    "com.kieranbrowne.cameraadversaria.fileprovider",
-                    filtered)
-
-                Log.d("URI", uri.toString())*/
-
-                //resultIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-
-
-                output = FileOutputStream(filtered)
-                //output.write(bytes)
-
-                newBmp?.let {
-                    val rotatedBitmap = Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)
-
-                    rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-                }
-
-                output.close()
-                //gpuImage.saveToPictures("GPUImage", "ImageWithFilter.jpg", null)
-
-                MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Title" , "yo");
-
-                //MediaStore.Images.Media.insertImage(ContentResolver cr, String imagePath, String name, String description)
-
-
-            } else {
-                Log.e("ERROR", "IT was null")
-            }
-
-            //MediaScannerConnection.scanFile(this, arrayOf<String>(File(filesDir, "filtered_${timeStamp}.jpg").toString()), null, null)
-
-
-
-
-
-            //image.close();
-        } else {
-            Log.e("WOAH", "image was null")
+        try {
+            displayLatestImageThumb();
+        } catch (e : Exception) {
         }
 
     }
+
+
+
+
+
 
     private fun openCamera() {
         if(checkPermission()) {
@@ -262,10 +139,24 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                         val image = imageReader?.acquireLatestImage()
 
                         image?.let {
-                            processImage(it)
+                            val buffer : ByteBuffer = it.getPlanes()[0].getBuffer()
+                            val bytes = ByteArray(buffer.capacity())
+                            buffer.get(bytes)
+                            val bitmapImage : Bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null);
+                            val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(bitmapImage, 64, 64);
+                            open_gallery.setImageBitmap(thumbImage);
+
+
+
+                            processImage(it,
+                                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat() -
+                                    windowManager.defaultDisplay.rotation.toFloat() - 90.0.toFloat())
+
+
                         }
 
-                        openGallery()
+                        //openGallery()
+
 
                     }, null)
 
@@ -307,8 +198,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                     object : CameraCaptureSession.CaptureCallback() {},
                                     null
                                 )
-
-                                Toast.makeText(this@MainActivity,"Shoot!", Toast.LENGTH_LONG).show()
                             }
 
                             flip_cam.setOnClickListener {
@@ -320,6 +209,12 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                 cameraDevice.close()
 
                                 openCamera()
+                            }
+
+                            open_gallery.setOnClickListener {
+                                Toast.makeText(this@MainActivity,"Gallery!", Toast.LENGTH_LONG).show()
+                                cameraDevice.close()
+                                openGallery()
                             }
                         }
                     }
@@ -343,9 +238,122 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
     }
 
-    private fun captureStill() {
+    private fun dateString(date: java.util.Date) : String {
+        return java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(date)
+    }
+
+    private fun safeGetPublicDir() : File {
+
+        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+        if (!publicDir.exists()) publicDir.mkdirs()
+
+        return publicDir;
+    }
+
+    private fun imageToBitmap(image: Image) : Bitmap {
+        val buffer = image.planes[0].buffer
+        buffer.rewind();
+        val bytes = ByteArray(buffer.remaining())
+        image.planes[0].buffer.get(bytes);
+
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
+    }
+
+    private fun rotateBitmap(bmp : Bitmap, degrees: Float) : Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(degrees)
+        return Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
+    }
+
+    private fun processImage(image: Image, rotation: Float) {
+
+        Log.d("ROTATION", rotation.toString())
+
+        val timeStamp = dateString(java.util.Date())
+
+        val publicDir = safeGetPublicDir()
+
+        val file = File(filesDir, "JPEG_${timeStamp}.jpg")
+
+        val bmp = rotateBitmap(imageToBitmap(image), rotation)
+
+        var output: FileOutputStream? = null
+
+            try {
+
+                output = FileOutputStream(file)
+                //output.write(bytes)
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, output);
+
+                Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
+
+            } catch (e: java.io.IOException) {
+                Log.e("ERROR", e.toString())
+            } finally {
+                //val bm = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                //MediaStore.Images.Media.insertImage(getContentResolver(),bm,"pic.jpg", null);
+                //bm.recycle()
+
+                val files = filesDir.listFiles();
+                Log.d("TEST", "Size: "+ files.size.toString());
+                image.close()
+                output?.let {
+                    try {
+                        it.close()
+
+                    } catch (e: java.io.IOException) {
+                        Log.e("ERROR", e.toString())
+                    }
+                }
+            }
 
 
+
+            val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+            Log.d("DIR", File(path.toURI()).listFiles().size.toString())
+
+
+            val gpuImage = GPUImage(this)
+            gpuImage.setFilter(AdversarialFilter(0.0))
+            gpuImage.setImage(file)
+
+            val newBmp = gpuImage.getBitmapWithFilterApplied(bmp)
+
+            MediaStore.Images.Media.insertImage(getContentResolver(), newBmp, "Untitled" , "Camera Advseraria image");
+
+            Log.d("WIDTH",newBmp.width.toString())
+
+            if(gpuImage != null) {
+
+                val filtered = File(publicDir, "adversarial_"+file.toString().split("/").last())
+
+                output = FileOutputStream(filtered)
+                //output.write(bytes)
+
+                newBmp?.let {
+                    val rotatedBitmap = rotateBitmap(it, rotation)
+                    rotatedBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                }
+
+                output.close()
+
+
+                MediaStore.Images.Media.insertImage(getContentResolver(), filtered.toString(), "Untitled" , "Camera Adversaria image");
+
+
+
+            } else {
+                Log.e("ERROR", "IT was null")
+            }
+
+            //MediaScannerConnection.scanFile(this, arrayOf<String>(File(filesDir, "filtered_${timeStamp}.jpg").toString()), null, null)
+
+
+
+
+
+            //image.close();
     }
 
     private fun areDimensionsSwapped(displayRotation: Int, cameraCharacteristics: CameraCharacteristics): Boolean {
@@ -382,8 +390,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     }
 
     override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-        //mCamera!!.stopPreview()
-        //mCamera!!.release()
+        Log.d("THISMIGHTBETHEPROBLEM", "1")
         return true
     }
 
@@ -391,6 +398,17 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         // Invoked every time there's a new Camera preview frame.
     }
 
+
+    fun displayLatestImageThumb() {
+
+        val THUMBSIZE : Int = 64;
+        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+
+        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(publicDir.listFiles()[publicDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
+
+        open_gallery.setImageBitmap(thumbImage);
+
+    }
 
 
     private fun checkPermission(): Boolean {

@@ -157,6 +157,37 @@ class GalleryActivity : AppCompatActivity() {
         return imgData
     }
 
+    private fun runModelPrediction(bmp : Bitmap) {
+        val croppedBitmap = Bitmap.createBitmap(bmp, 0, 0, kotlin.math.min(bmp.width,bmp.height), kotlin.math.min(bmp.width,bmp.height), null, false)
+
+        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
+        //croppedBitmap
+        
+
+        val result = Array(1) { FloatArray(1001) }
+
+        model = Interpreter(loadModelFile(this@GalleryActivity))
+
+        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
+
+        model?.close()
+
+        //Log.d("Vals", result[0].joinToString())
+
+        var biggest: Float = 0.0.toFloat()
+        var biggestidx = 0
+        for(i in 0.until(result[0].size)) {
+            if(result[0][i] > biggest) {
+                biggest = result[0][i]
+                biggestidx = i
+            }
+        }
+
+        Log.d("biggest", "Prediction is "+labels?.get(biggestidx).toString() +" "+biggest.toString() )
+
+
+        predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
+    }
 
 
     private fun loadImage() {
@@ -170,49 +201,31 @@ class GalleryActivity : AppCompatActivity() {
         val file = publicDir.listFiles()[publicDir.listFiles().size - index -1].toString()
 
 
-        val myBitmap = BitmapFactory.decodeFile(file)
+        try {
+            val myBitmap = BitmapFactory.decodeFile(file)
 
+            //val data = filesDir.listFiles()[filesDir.listFiles().size-1].readText(Charsets.UTF_8)
 
-        //val data = filesDir.listFiles()[filesDir.listFiles().size-1].readText(Charsets.UTF_8)
-
-        myBitmap?.let {
-            Log.d("GALLERYSIZE",it.width.toString() +"x"+it.height.toString())
-        }
-
-
-        val croppedBitmap = Bitmap.createBitmap(myBitmap, 0, 0, kotlin.math.min(myBitmap.width,myBitmap.height), kotlin.math.min(myBitmap.width,myBitmap.height), null, false)
-
-        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
-        //croppedBitmap
-
-
-
-        val result = Array(1) { FloatArray(1001) }
-
-        model = Interpreter(loadModelFile(this@GalleryActivity))
-
-        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
-
-        model?.close()
-
-
-        //Log.d("Vals", result[0].joinToString())
-
-        var biggest: Float = 0.0.toFloat()
-        var biggestidx = 0
-        for(i in 0.until(result[0].size)) {
-            if(result[0][i] > biggest) {
-                biggest = result[0][i]
-                biggestidx = i
+            myBitmap?.let {
+                Log.d("GALLERYSIZE",it.width.toString() +"x"+it.height.toString())
             }
+
+            runModelPrediction(myBitmap)
+
+
+            imageView.setImageBitmap(myBitmap)
+
+
+        } catch (e : java.lang.Exception) {
+            Log.d("FUCK", "1")
+
+            val file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
+
+            val myBitmap = BitmapFactory.decodeFile(file)
+
+            imageView.setImageBitmap(myBitmap)
         }
-        Log.d("FILE", file)
-        Log.d("biggest", "Prediction is "+labels?.get(biggestidx).toString() +" "+biggest.toString() )
 
-
-        predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
-
-        imageView.setImageBitmap(myBitmap)
 
         //filterImage()
 
