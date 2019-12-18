@@ -168,7 +168,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
     override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
 
-        holder.imageview.setImageBitmap(loadBitmap(photos.get(position)))
+        holder.loadImageAsync(photos.get(position)).execute()
 
         holder.predictAsync(loadBitmap(photos.get(position))).execute()
 
@@ -198,6 +198,26 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
         val filterSpinner = view.filterSpinner
         val filterSeekBar = view.filterSeekBar
         val predictedClass = view.predictedClass
+
+
+        inner class loadImageAsync(file: File) : AsyncTask<Void, Void, Bitmap>() {
+
+            val file = file
+
+            override fun doInBackground(vararg params: Void?): Bitmap? {
+                return loadBitmap(file)
+            }
+
+            override fun onPreExecute() {
+                super.onPreExecute()
+            }
+
+            override fun onPostExecute(result: Bitmap) {
+                super.onPostExecute(result)
+                imageview.setImageBitmap(result)
+            }
+
+        }
 
         inner class filterAsync(context: Context, file: File, amp : Double) : AsyncTask<Void, Void, Bitmap>() {
 
@@ -258,7 +278,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
                     imageview.setImageBitmap(rotateBitmap(result, 180.toFloat()))
                 else if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
                     imageview.setImageBitmap(rotateBitmap(result, 270.toFloat()))
-                else return imageview.setImageBitmap(result)
+                else imageview.setImageBitmap(result)
 
                 filterSpinner.alpha = 0.0f
 

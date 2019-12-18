@@ -48,19 +48,12 @@ class GalleryActivity : AppCompatActivity() {
 
         addPhotos()
 
-        gallery_list.layoutManager = android.support.v7.widget.LinearLayoutManager(this)
+        gallery_list.layoutManager = android.support.v7.widget.LinearLayoutManager(this,  android.support.v7.widget.LinearLayoutManager.HORIZONTAL, false)
 
         gallery_list.adapter = GalleryAdapter(photos, this, this)
 
 
     }
-
-
-
-
-
-
-
 
 
 }
