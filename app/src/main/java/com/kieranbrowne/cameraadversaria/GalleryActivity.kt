@@ -81,35 +81,7 @@ class GalleryActivity : AppCompatActivity() {
         model = Interpreter(loadModelFile(this@GalleryActivity))
         labels = loadLabelList(this@GalleryActivity)
 
-        loadImage() // load the lastest image
 
-        nextButton.setOnClickListener {
-
-            index ++
-
-            loadImage()
-
-        }
-
-        filterSeekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                // TODO Auto-generated method stub
-
-                filterSpinner.alpha = 1.0f
-                val filter = FilterRunnable(this@GalleryActivity, (progress/100.0)*(progress/200.0))
-                Thread(filter).start()
-
-            }
-        })
     }
 
 
@@ -188,122 +160,8 @@ class GalleryActivity : AppCompatActivity() {
         predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
     }
 
-    private fun rotateBitmap(bmp : Bitmap, degrees: Float) : Bitmap {
-        val matrix = Matrix()
-        matrix.postRotate(degrees)
-        val rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
-        return rotated
-    }
-
-    private fun loadRotatedBitmap(file : File) : Bitmap {
-        val adversarial_image = BitmapFactory.decodeFile(file.toString())
-
-        val exif =  android.media.ExifInterface(file.toString())
-        val rot = exif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION);
-        if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_90.toString())
-            return rotateBitmap(adversarial_image, 90.toFloat());
-        if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_180.toString())
-            return rotateBitmap(adversarial_image, 180.toFloat());
-        if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
-            return rotateBitmap(adversarial_image, 270.toFloat());
-        return adversarial_image
-    }
-
-    private fun loadImage() {
-
-        val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
 
 
-        val private_file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
-
-
-        try {
-            // try to load filtered image but fall back if not present
-            val filtered_file = File(publicDir, "adversarial_"+private_file.split("/").last())
-            val adversarial_image = loadRotatedBitmap(filtered_file)
-
-            runModelPrediction(adversarial_image)
-
-            imageView.setImageBitmap(adversarial_image)
-
-
-        } catch (e : java.lang.Exception) {
-
-            val private_bmp = BitmapFactory.decodeFile(private_file)
-
-            imageView.setImageBitmap(private_bmp)
-        }
-
-    }
-
-    inner class FilterRunnable(context: Context, amp: Double) : Runnable {
-
-        val context = context
-        val amp = amp
-
-        private fun filterImage() {
-
-
-
-            var output: FileOutputStream? = null
-
-            val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
-
-            if (!publicDir.exists()) {
-                publicDir.mkdirs()
-            }
-
-
-            val private_file = filesDir.listFiles()[filesDir.listFiles().size - index -1].toString()
-            val bitmap = BitmapFactory.decodeFile(private_file)
-
-            val gpuImage = GPUImage(context)
-            gpuImage.setFilter(AdversarialFilter(amp))
-            //gpuImage.setImage(file)
-
-            val filteredBitmap = gpuImage.getBitmapWithFilterApplied(bitmap)
-
-            //MediaStore.Images.Media.insertImage(getContentResolver(), filteredBitmap, "Hello" , "Test Desc");
-
-
-            if(gpuImage != null) {
-
-                val filtered = File(publicDir, "adversarial_"+private_file.split("/").last())
-
-
-                output = FileOutputStream(filtered)
-
-                filteredBitmap?.let {
-                    it.compress(Bitmap.CompressFormat.JPEG, 100, output)
-                }
-
-                val originalexif = android.media.ExifInterface(private_file.toString())
-
-                val exif =  android.media.ExifInterface(filtered.toString())
-                exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, originalexif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION))
-                exif.saveAttributes()
-
-                output.close()
-
-            } else {
-                Log.e("ERROR", "IT was null")
-            }
-
-            runOnUiThread({
-                filterSpinner.alpha = 0.0f
-                loadImage()
-            })
-
-        }
-
-        override fun run() {
-            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
-
-            filterImage()
-
-        }
-
-    }
 
 }
 
