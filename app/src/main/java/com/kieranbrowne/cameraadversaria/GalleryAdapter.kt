@@ -28,11 +28,11 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
     val parentcontext = context
 
+
     val DIM_IMG_SIZE_X = 224
     val DIM_IMG_SIZE_Y = 224
     val DIM_PIXEL_SIZE = 3
     val DIM_BATCH_SIZE = 1
-
 
     private var model: Interpreter? = null
     private var labels: List<String>? = null
@@ -41,6 +41,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
     private fun loadLabelList(activity: Activity): List<String> {
         val labels = ArrayList<String>()
         val reader = BufferedReader(InputStreamReader(activity.assets.open("labels_mobilenet_quant_v1_224.txt")))
+        Log.d("CHECK", activity.assets.open("labels_mobilenet_quant_v1_224.txt").toString())
         var line: String?
         while (true) {
             line = reader.readLine()
@@ -98,40 +99,20 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
         return imgData
     }
 
-    private fun runModelPrediction(bmp : Bitmap, textView: android.widget.TextView) {
-        val croppedBitmap = Bitmap.createBitmap(bmp, 0, 0, kotlin.math.min(bmp.width,bmp.height), kotlin.math.min(bmp.width,bmp.height), null, false)
 
-        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
-        //croppedBitmap
-
-
-        val result = Array(1) { FloatArray(1001) }
-
-        model = Interpreter(loadModelFile(activity))
-
-        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
-
-        model?.close()
-
-
-        var biggest: Float = 0.0.toFloat()
-        var biggestidx = 0
-        for(i in 0.until(result[0].size)) {
-            if(result[0][i] > biggest) {
-                biggest = result[0][i]
-                biggestidx = i
-            }
-        }
-
-        //textView.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
-        return PhotoHolder(LayoutInflater.from(context).inflate(R.layout.gallery_item, parent, false))
 
+
+        Log.d("LOAD", "loading model")
 
         model = Interpreter(loadModelFile(activity))
+
+        Log.d("LOAD", "loading labels")
         labels = loadLabelList(activity)
+
+
+        return PhotoHolder(LayoutInflater.from(context).inflate(R.layout.gallery_item, parent, false))
 
     }
 
@@ -187,26 +168,21 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
     override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
 
+        holder.imageview.setImageBitmap(loadBitmap(photos.get(position)))
 
-        holder.predictAsync().execute()
+        holder.predictAsync(loadBitmap(photos.get(position))).execute()
 
         // deal with filtering
         holder.filterSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
 
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                // TODO Auto-generated method stub
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {
-                // TODO Auto-generated method stub
             }
 
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                // TODO Auto-generated method stub
-
                 holder.filterSpinner.alpha = 1.0f
-                //val filter = FilterRunnable(context, photos.get(position), loadImage, (progress/100.0)*(progress/200.0))
-                //Thread(filter).start()
                 holder.filterAsync(context, photos.get(position), (progress/100.0)*(progress/200.0)).execute()
 
             }
@@ -216,7 +192,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
 
 
-    class PhotoHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class PhotoHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         val imageview = view.gallery_image
         val filterSpinner = view.filterSpinner
@@ -228,6 +204,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
             val amp = amp
             val private_file = file.toString()
             val context = context
+            val file = file
 
             override fun doInBackground(vararg params: Void?): Bitmap? {
                 val gpuImage = GPUImage(context)
@@ -272,8 +249,20 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
             override fun onPostExecute(result: Bitmap) {
                 super.onPostExecute(result)
                 // ...
-                imageview.setImageBitmap(result)
+
+                val exif =  android.media.ExifInterface(file.toString())
+                val rot = exif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION);
+                if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_90.toString())
+                    imageview.setImageBitmap(rotateBitmap(result, 90.toFloat()))
+                else if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_180.toString())
+                    imageview.setImageBitmap(rotateBitmap(result, 180.toFloat()))
+                else if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
+                    imageview.setImageBitmap(rotateBitmap(result, 270.toFloat()))
+                else return imageview.setImageBitmap(result)
+
                 filterSpinner.alpha = 0.0f
+
+                predictAsync(loadBitmap(file)).execute()
             }
 
         }
@@ -281,10 +270,45 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
 
 
-        inner class predictAsync() : AsyncTask<Void, Void, String>() {
+        inner class predictAsync(bmp: Bitmap) : AsyncTask<Void, Void, String>() {
+
+            val bmp = bmp
+
             override fun doInBackground(vararg params: Void?): String? {
+
+
+                val croppedBitmap = Bitmap.createBitmap(bmp, 0, 0, kotlin.math.min(bmp.width,bmp.height), kotlin.math.min(bmp.width,bmp.height), null, false)
+
+                val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
+                //croppedBitmap
+
+
+                val result = Array(1) { FloatArray(1001) }
+
+                model = Interpreter(loadModelFile(activity))
+
+                model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
+
+                model?.close()
+
+
+                var biggest: Float = 0.0.toFloat()
+                var biggestidx = 0
+                for(i in 0.until(result[0].size)) {
+                    if(result[0][i] > biggest) {
+                        biggest = result[0][i]
+                        biggestidx = i
+                    }
+                }
+
+                if(labels?.get(0) != null)
+                    Log.d("LABELS ", labels?.get(0))
+                else
+                    Log.d("LABELS ", "no label 0")
+                Log.d("LABELS ", labels?.size.toString())
+
                 // ...
-                return "Wow"
+                return labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%"
             }
 
             override fun onPreExecute() {
