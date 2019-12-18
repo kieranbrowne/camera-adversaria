@@ -369,9 +369,21 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         val THUMBSIZE : Int = 64;
 
-        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(filesDir.listFiles()[filesDir.listFiles().size-1].toString()), THUMBSIZE, THUMBSIZE);
+        val private_file = filesDir.listFiles()[filesDir.listFiles().size-1].toString()
 
-        open_gallery.setImageBitmap(thumbImage);
+        val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(private_file), THUMBSIZE, THUMBSIZE);
+
+
+        val exif =  android.media.ExifInterface(private_file.toString())
+        val rot = exif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION);
+        if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_90.toString())
+            open_gallery.setImageBitmap(rotateBitmap(thumbImage, 90.toFloat()))
+        else if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_180.toString())
+            open_gallery.setImageBitmap(rotateBitmap(thumbImage, 180.toFloat()))
+        else if(rot == android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
+            open_gallery.setImageBitmap(rotateBitmap(thumbImage, 270.toFloat()))
+        else
+            open_gallery.setImageBitmap(thumbImage)
 
     }
 

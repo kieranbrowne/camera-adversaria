@@ -48,4 +48,7 @@
             style="@android:style/Widget.Material.SeekBar" android:progressTint="#FFFFFF" android:scaleX="2"
             android:scaleY="2" android:progress="1" android:paddingLeft="18dip" android:paddingRight="18dip"
             android:layout_marginBottom="8dp" android:layout_marginTop="8dp"/>
+    <android.support.v7.widget.RecyclerView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" android:id="@+id/gallery_list"/>
 </android.support.constraint.ConstraintLayout>

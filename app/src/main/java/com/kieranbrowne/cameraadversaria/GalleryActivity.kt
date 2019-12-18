@@ -41,6 +41,9 @@ class GalleryActivity : AppCompatActivity() {
     private var labels: List<String>? = null
 
 
+    val photos: ArrayList<File> = ArrayList()
+
+
     @Throws(IOException::class)
     private fun loadLabelList(activity: Activity): List<String> {
         val labels = ArrayList<String>()
@@ -56,11 +59,24 @@ class GalleryActivity : AppCompatActivity() {
     }
 
 
+    private fun addPhotos() {
+        for (f in filesDir.listFiles().reversed()) {
+            photos.add(f)
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
+
+
+        addPhotos()
+
+        gallery_list.layoutManager = android.support.v7.widget.LinearLayoutManager(this)
+
+        gallery_list.adapter = GalleryAdapter(photos, this)
+
 
         model = Interpreter(loadModelFile(this@GalleryActivity))
         labels = loadLabelList(this@GalleryActivity)
@@ -268,8 +284,6 @@ class GalleryActivity : AppCompatActivity() {
                 exif.saveAttributes()
 
                 output.close()
-
-                //imageView.setImageBitmap(filteredBitmap)
 
             } else {
                 Log.e("ERROR", "IT was null")
