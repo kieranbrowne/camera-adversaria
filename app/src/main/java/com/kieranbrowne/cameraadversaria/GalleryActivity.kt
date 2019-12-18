@@ -29,34 +29,9 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 
 class GalleryActivity : AppCompatActivity() {
 
-    private var index = 0
-
-    val DIM_IMG_SIZE_X = 224
-    val DIM_IMG_SIZE_Y = 224
-    val DIM_PIXEL_SIZE = 3
-    val DIM_BATCH_SIZE = 1
-
-
-    private var model: Interpreter? = null
-    private var labels: List<String>? = null
-
 
     val photos: ArrayList<File> = ArrayList()
 
-
-    @Throws(IOException::class)
-    private fun loadLabelList(activity: Activity): List<String> {
-        val labels = ArrayList<String>()
-        val reader = BufferedReader(InputStreamReader(activity.assets.open("labels_mobilenet_quant_v1_224.txt")))
-        var line: String?
-        while (true) {
-            line = reader.readLine()
-            if(line == null) break
-            labels.add(line)
-        }
-        reader.close()
-        return labels
-    }
 
 
     private fun addPhotos() {
@@ -75,90 +50,15 @@ class GalleryActivity : AppCompatActivity() {
 
         gallery_list.layoutManager = android.support.v7.widget.LinearLayoutManager(this)
 
-        gallery_list.adapter = GalleryAdapter(photos, this)
-
-
-        model = Interpreter(loadModelFile(this@GalleryActivity))
-        labels = loadLabelList(this@GalleryActivity)
+        gallery_list.adapter = GalleryAdapter(photos, this, this)
 
 
     }
 
 
 
-    private fun loadModelFile(activity: Activity): MappedByteBuffer {
-        val MODEL_PATH = "mobilenet_v2_1.0_224.tflite"
 
 
-        val fileDescriptor = activity.assets.openFd(MODEL_PATH)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel = inputStream.channel
-
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, fileDescriptor.startOffset, fileDescriptor.declaredLength)
-    }
-
-    private fun loadBitmapAsByteBuffer(bitmap: Bitmap) : ByteBuffer {
-
-        var imgData: ByteBuffer = ByteBuffer.allocateDirect(
-            DIM_BATCH_SIZE
-                    * DIM_IMG_SIZE_X
-                    * DIM_IMG_SIZE_Y
-                    * DIM_PIXEL_SIZE
-                    * 4) // floats are 4 bytes each
-
-        imgData.order(ByteOrder.nativeOrder())
-
-        imgData.rewind()
-
-        val intValues = IntArray(bitmap.width*bitmap.height)
-
-        bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-
-        var idx = 0
-
-        val IMG_MEAN = 128.toFloat()
-        val IMG_STD = 128.0f
-        for (x in 0..DIM_IMG_SIZE_X-1) {
-            for (y in 0..DIM_IMG_SIZE_Y-1) {
-                val v: Int = intValues[idx++]
-                //Log.d("idx", idx.toString())
-                imgData.putFloat( (((v shr 16) and 0xFF) - IMG_MEAN)/IMG_STD )
-                imgData.putFloat( (((v shr 8) and 0xFF) - IMG_MEAN)/IMG_STD )
-                imgData.putFloat( (((v) and 0xFF) - IMG_MEAN)/IMG_STD )
-            }
-        }
-
-
-        return imgData
-    }
-
-    private fun runModelPrediction(bmp : Bitmap) {
-        val croppedBitmap = Bitmap.createBitmap(bmp, 0, 0, kotlin.math.min(bmp.width,bmp.height), kotlin.math.min(bmp.width,bmp.height), null, false)
-
-        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
-        //croppedBitmap
-
-
-        val result = Array(1) { FloatArray(1001) }
-
-        model = Interpreter(loadModelFile(this@GalleryActivity))
-
-        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
-
-        model?.close()
-
-
-        var biggest: Float = 0.0.toFloat()
-        var biggestidx = 0
-        for(i in 0.until(result[0].size)) {
-            if(result[0][i] > biggest) {
-                biggest = result[0][i]
-                biggestidx = i
-            }
-        }
-
-        predictedClass.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
-    }
 
 
 

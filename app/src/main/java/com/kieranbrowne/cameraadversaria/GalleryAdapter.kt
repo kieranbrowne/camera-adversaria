@@ -1,5 +1,7 @@
 package com.kieranbrowne.cameraadversaria
 
+import android.app.Activity
+import android.os.AsyncTask
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,19 +12,127 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AutoCompleteTextView
 import android.widget.SeekBar
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import kotlinx.android.synthetic.main.activity_gallery.*
 import kotlinx.android.synthetic.main.gallery_item.view.*
-import java.io.File
-import java.io.FileOutputStream
+import org.tensorflow.lite.Interpreter
+import java.io.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
-class GalleryAdapter(private val photos: ArrayList<File>, val context: android.content.Context) : RecyclerView.Adapter<GalleryAdapter.PhotoHolder>() {
+class GalleryAdapter(private val photos: ArrayList<File>, val context: android.content.Context, val activity: Activity) : RecyclerView.Adapter<GalleryAdapter.PhotoHolder>() {
 
     val parentcontext = context
 
+    val DIM_IMG_SIZE_X = 224
+    val DIM_IMG_SIZE_Y = 224
+    val DIM_PIXEL_SIZE = 3
+    val DIM_BATCH_SIZE = 1
+
+
+    private var model: Interpreter? = null
+    private var labels: List<String>? = null
+
+    @Throws(IOException::class)
+    private fun loadLabelList(activity: Activity): List<String> {
+        val labels = ArrayList<String>()
+        val reader = BufferedReader(InputStreamReader(activity.assets.open("labels_mobilenet_quant_v1_224.txt")))
+        var line: String?
+        while (true) {
+            line = reader.readLine()
+            if(line == null) break
+            labels.add(line)
+        }
+        reader.close()
+        return labels
+    }
+
+
+    private fun loadModelFile(activity: Activity): MappedByteBuffer {
+        val MODEL_PATH = "mobilenet_v2_1.0_224.tflite"
+
+
+        val fileDescriptor = activity.assets.openFd(MODEL_PATH)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, fileDescriptor.startOffset, fileDescriptor.declaredLength)
+    }
+
+    private fun loadBitmapAsByteBuffer(bitmap: Bitmap) : ByteBuffer {
+
+        var imgData: ByteBuffer = ByteBuffer.allocateDirect(
+            DIM_BATCH_SIZE
+                    * DIM_IMG_SIZE_X
+                    * DIM_IMG_SIZE_Y
+                    * DIM_PIXEL_SIZE
+                    * 4) // floats are 4 bytes each
+
+        imgData.order(ByteOrder.nativeOrder())
+
+        imgData.rewind()
+
+        val intValues = IntArray(bitmap.width*bitmap.height)
+
+        bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+
+        var idx = 0
+
+        val IMG_MEAN = 128.toFloat()
+        val IMG_STD = 128.0f
+        for (x in 0..DIM_IMG_SIZE_X-1) {
+            for (y in 0..DIM_IMG_SIZE_Y-1) {
+                val v: Int = intValues[idx++]
+                //Log.d("idx", idx.toString())
+                imgData.putFloat( (((v shr 16) and 0xFF) - IMG_MEAN)/IMG_STD )
+                imgData.putFloat( (((v shr 8) and 0xFF) - IMG_MEAN)/IMG_STD )
+                imgData.putFloat( (((v) and 0xFF) - IMG_MEAN)/IMG_STD )
+            }
+        }
+
+
+        return imgData
+    }
+
+    private fun runModelPrediction(bmp : Bitmap, textView: android.widget.TextView) {
+        val croppedBitmap = Bitmap.createBitmap(bmp, 0, 0, kotlin.math.min(bmp.width,bmp.height), kotlin.math.min(bmp.width,bmp.height), null, false)
+
+        val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,DIM_IMG_SIZE_X, DIM_IMG_SIZE_X, false)
+        //croppedBitmap
+
+
+        val result = Array(1) { FloatArray(1001) }
+
+        model = Interpreter(loadModelFile(activity))
+
+        model?.run(loadBitmapAsByteBuffer(scaledBitmap),result) // run prediction over bitmap
+
+        model?.close()
+
+
+        var biggest: Float = 0.0.toFloat()
+        var biggestidx = 0
+        for(i in 0.until(result[0].size)) {
+            if(result[0][i] > biggest) {
+                biggest = result[0][i]
+                biggestidx = i
+            }
+        }
+
+        //textView.setText(labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%")
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
         return PhotoHolder(LayoutInflater.from(context).inflate(R.layout.gallery_item, parent, false))
+
+
+        model = Interpreter(loadModelFile(activity))
+        labels = loadLabelList(activity)
+
     }
 
     override fun getItemCount(): Int = photos.size
@@ -53,12 +163,12 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
         val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
 
 
-        val private_file = file.toString()
+        val private_file = file
 
 
         try {
             // try to load filtered image but fall back if not present
-            val filtered_file = File(publicDir, "adversarial_"+private_file.split("/").last())
+            val filtered_file = File(publicDir, "adversarial_"+private_file.toString().split("/").last())
             val adversarial_image = loadRotatedBitmap(filtered_file)
 
             //runModelPrediction(adversarial_image)
@@ -68,7 +178,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
         } catch (e : java.lang.Exception) {
 
-            val private_bmp = BitmapFactory.decodeFile(private_file)
+            val private_bmp = loadRotatedBitmap(private_file)
 
             return private_bmp
         }
@@ -77,12 +187,8 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
     override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
 
-        // display image
-        val loadImage : (()->Unit) = {
-            holder.imageview?.setImageBitmap(loadBitmap(photos.get(position)))
-            holder.filterSpinner.alpha = 0.0f
-        }
-        loadImage()
+
+        holder.predictAsync().execute()
 
         // deal with filtering
         holder.filterSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -99,8 +205,9 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
                 // TODO Auto-generated method stub
 
                 holder.filterSpinner.alpha = 1.0f
-                val filter = FilterRunnable(context, photos.get(position), loadImage, (progress/100.0)*(progress/200.0))
-                Thread(filter).start()
+                //val filter = FilterRunnable(context, photos.get(position), loadImage, (progress/100.0)*(progress/200.0))
+                //Thread(filter).start()
+                holder.filterAsync(context, photos.get(position), (progress/100.0)*(progress/200.0)).execute()
 
             }
         })
@@ -114,79 +221,85 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
         val imageview = view.gallery_image
         val filterSpinner = view.filterSpinner
         val filterSeekBar = view.filterSeekBar
+        val predictedClass = view.predictedClass
 
+        inner class filterAsync(context: Context, file: File, amp : Double) : AsyncTask<Void, Void, Bitmap>() {
 
-
-    }
-
-    inner class FilterRunnable(context: Context, file: File, callback: ()->Unit, amp: Double) : Runnable {
-
-        val context = context
-        val amp = amp
-
-        val file = file
-        val callback = callback
-
-        private fun filterImage() {
-
-
-
-            var output: FileOutputStream? = null
-
-
-
+            val amp = amp
             val private_file = file.toString()
-            val bitmap = BitmapFactory.decodeFile(private_file)
+            val context = context
 
-            val gpuImage = GPUImage(context)
-            gpuImage.setFilter(AdversarialFilter(amp))
-            //gpuImage.setImage(file)
+            override fun doInBackground(vararg params: Void?): Bitmap? {
+                val gpuImage = GPUImage(context)
+                gpuImage.setFilter(AdversarialFilter(amp))
+                // ...
 
-            val filteredBitmap = gpuImage.getBitmapWithFilterApplied(bitmap)
+                val bitmap = BitmapFactory.decodeFile(private_file)
+                val filteredBitmap = gpuImage.getBitmapWithFilterApplied(bitmap)
 
-            //MediaStore.Images.Media.insertImage(getContentResolver(), filteredBitmap, "Hello" , "Test Desc");
+                if(gpuImage != null) {
 
-
-            if(gpuImage != null) {
-
-                val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
-                val filtered = File(publicDir, "adversarial_"+private_file.split("/").last())
+                    val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
+                    val filtered = File(publicDir, "adversarial_"+private_file.split("/").last())
 
 
-                output = FileOutputStream(filtered)
+                    val output = FileOutputStream(filtered)
 
-                filteredBitmap?.let {
-                    it.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                    filteredBitmap?.let {
+                        it.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                    }
+
+                    val originalexif = android.media.ExifInterface(private_file.toString())
+
+                    val exif =  android.media.ExifInterface(filtered.toString())
+                    exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, originalexif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION))
+                    exif.saveAttributes()
+
+                    output.close()
+
+                } else {
+                    Log.e("ERROR", "IT was null")
                 }
 
-                val originalexif = android.media.ExifInterface(private_file.toString())
-
-                val exif =  android.media.ExifInterface(filtered.toString())
-                exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, originalexif.getAttribute(android.media.ExifInterface.TAG_ORIENTATION))
-                exif.saveAttributes()
-
-                output.close()
-
-            } else {
-                Log.e("ERROR", "IT was null")
+                return filteredBitmap
             }
 
-            callback()
+            override fun onPreExecute() {
+                super.onPreExecute()
+                // ...
+            }
 
-
-            /*runOnUiThread({
-
-                //loadImage()
-            })*/
-
-        }
-
-        override fun run() {
-            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
-
-            filterImage()
+            override fun onPostExecute(result: Bitmap) {
+                super.onPostExecute(result)
+                // ...
+                imageview.setImageBitmap(result)
+                filterSpinner.alpha = 0.0f
+            }
 
         }
+
+
+
+
+        inner class predictAsync() : AsyncTask<Void, Void, String>() {
+            override fun doInBackground(vararg params: Void?): String? {
+                // ...
+                return "Wow"
+            }
+
+            override fun onPreExecute() {
+                super.onPreExecute()
+                // ...
+            }
+
+            override fun onPostExecute(result: String?) {
+                super.onPostExecute(result)
+                // ...
+                predictedClass.setText(result)
+            }
+        }
+
+
 
     }
 
