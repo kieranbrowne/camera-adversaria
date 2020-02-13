@@ -35,6 +35,8 @@ import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Environment
 import android.util.DisplayMetrics
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
 import com.kieranbrowne.cameraadversaria.AdversarialFilter
@@ -72,6 +74,14 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
     }
 
+    private fun reopenCamera() {
+        if(checkPermission()) {
+            if (previewSurface.isValid) {
+                openCamera()
+            }
+        }
+
+    }
 
     private fun openCamera() {
         if(checkPermission()) {
@@ -114,10 +124,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             val swappedDimensions = areDimensionsSwapped(displayRotation, cameraCharacteristics)// swap width and height if needed
                             val rotatedPreviewWidth = if (swappedDimensions) previewSize.height else previewSize.width
                             val rotatedPreviewHeight = if (swappedDimensions) previewSize.width else previewSize.height
-                            //textureView!!.layoutParams = android.widget.FrameLayout.LayoutParams(previewSize.width, previewSize.height, android.view.Gravity.CENTER)
-                            surfaceView.holder.setFixedSize(rotatedPreviewWidth, rotatedPreviewHeight)
 
-                            imageReader = ImageReader.newInstance(rotatedPreviewWidth*12, rotatedPreviewHeight*12,
+                            imageReader = ImageReader.newInstance(previewSize.width*12, previewSize.height*12,
                                 ImageFormat.JPEG, 3)
                         }
                     }
@@ -127,10 +135,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                     //surfaceView.holder.setFixedSize(800, 800);
                     previewSurface = surfaceView.holder.surface;
-                    //previewSurface.setFixedSize(800,800);
 
                     imageReader?.setOnImageAvailableListener({
-                        // do something
 
                         val image = imageReader?.acquireLatestImage()
 
@@ -146,16 +152,13 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                             processImage(it,
                                 cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat())
-
-
                         }
 
                     }, null)
 
                     // capture
-                    val stillRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
+                    val stillRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
                         .apply {
-                            //addTarget(previewSurface)
                             addTarget(recordingSurface)
                         }
 
@@ -169,7 +172,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             val previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                                 .apply {
                                     addTarget(previewSurface)
-                                    //addTarget(recordingSurface)
                                 }
                             session.setRepeatingRequest(
                                 previewRequestBuilder.build(),
@@ -185,6 +187,15 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                             start_cam.setOnClickListener {
 
+                                imageWritingSpinner.alpha = 1.0f
+                                open_gallery.alpha = 0.0f
+
+                                val anim : Animation = AlphaAnimation(.2f, 1.0f);
+                                anim.setDuration(120); //You can manage the blinking time with this parameter
+                                anim.setStartOffset(0);
+                                anim.setFillAfter(true);
+                                surfaceView.startAnimation(anim);
+
                                 session?.capture(
                                     stillRequestBuilder?.build(),
                                     object : CameraCaptureSession.CaptureCallback() {},
@@ -194,10 +205,11 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
                             flip_cam.setOnClickListener {
 
-                                Toast.makeText(this@MainActivity,"Flip!", Toast.LENGTH_LONG).show()
+                                //Toast.makeText(this@MainActivity,"Flip!", Toast.LENGTH_LONG).show()
 
                                 isRearCam = !isRearCam // flip cam
 
+                                session.abortCaptures()
                                 cameraDevice.close()
 
                                 openCamera()
@@ -283,7 +295,9 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     exif.setAttribute(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_ROTATE_270.toString())
                 exif.saveAttributes()
 
-                Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
+                //Toast.makeText(this, "Writing!", Toast.LENGTH_LONG).show()
+                imageWritingSpinner.alpha = 0.0f
+                open_gallery.alpha = 1.0f
 
             } catch (e: java.io.IOException) {
                 Log.e("ERROR", e.toString())

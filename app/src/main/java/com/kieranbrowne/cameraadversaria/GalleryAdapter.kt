@@ -104,11 +104,11 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
 
 
-        Log.d("LOAD", "loading model")
+        //Log.d("LOAD", "loading model")
 
         model = Interpreter(loadModelFile(activity))
 
-        Log.d("LOAD", "loading labels")
+        //Log.d("LOAD", "loading labels")
         labels = loadLabelList(activity)
 
 
@@ -205,7 +205,9 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
             val file = file
 
             override fun doInBackground(vararg params: Void?): Bitmap? {
+
                 return loadBitmap(file)
+
             }
 
             override fun onPreExecute() {

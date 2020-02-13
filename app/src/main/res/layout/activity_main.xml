@@ -49,4 +49,13 @@
             android:layout_marginStart="8dp" app:layout_constraintEnd_toStartOf="@+id/start_cam"
             android:layout_marginEnd="8dp" app:layout_constraintTop_toTopOf="@id/controls"
             app:layout_constraintBottom_toBottomOf="@id/controls"/>
+    <ProgressBar
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageWritingSpinner"
+            app:layout_constraintTop_toTopOf="@+id/open_gallery"
+            app:layout_constraintStart_toStartOf="@+id/open_gallery"
+            app:layout_constraintEnd_toEndOf="@+id/open_gallery"
+            app:layout_constraintBottom_toBottomOf="@+id/open_gallery" android:alpha="0.0"/>
 </android.support.constraint.ConstraintLayout>

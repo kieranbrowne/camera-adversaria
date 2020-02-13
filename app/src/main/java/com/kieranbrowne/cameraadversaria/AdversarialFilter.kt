@@ -52,15 +52,17 @@ private const val ADVERSARIAL_SHADER = "#define PI 3.1415\n" +
         "float n_xy = mix(n_x.x, n_x.y, fade_xy.y);\n"+
         "return 2.3 * n_xy;\n"+
         "}\n"+
+        "vec3 filter(vec3 img, vec2 coord, float scale) {\n"+
+        "   img.g += sin(cnoise(coord*scale +0.)*150. - PI*2.*.33)*amp;\n" +
+        "   img.r += sin(cnoise(coord*scale +0.)*150. - PI*2.*.66)*amp;\n" +
+        "   img.b += sin(cnoise(coord*scale -0.)*150. - 00.)*amp;\n" +
+        "   return img;\n"+
+        "}\n"+
         "void main()\n" +
         "{\n" +
         "   highp vec4 textureColor = texture2D(inputImageTexture, textureCoordinate);\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*35. )*150. + 00.)*amp;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*35. )*150. - 00.)*amp;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*35. )*150. - 00.)*amp;\n" +
-        "   textureColor.g += sin(cnoise(textureCoordinate*20. )*150. + 00.)*amp;\n" +
-        "   textureColor.r += sin(cnoise(textureCoordinate*20. )*150. - 00.)*amp;\n" +
-        "   textureColor.b += sin(cnoise(textureCoordinate*20. )*150. - 00.)*amp;\n" +
+        "   textureColor.rgb = filter(textureColor.rgb, textureCoordinate, 45.);\n"+
+        "   textureColor.rgb = filter(textureColor.rgb, textureCoordinate, 60.);\n"+
         "   \n" +
         "   gl_FragColor = textureColor;\n" +
         "}";
