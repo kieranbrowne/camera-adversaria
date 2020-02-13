@@ -2,7 +2,6 @@ package com.kieranbrowne.cameraadversaria
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import kotlinx.android.synthetic.main.activity_gallery.*
 import java.io.*
 
@@ -12,7 +11,6 @@ class GalleryActivity : AppCompatActivity() {
 
     private fun addPhotos() {
         for (f in filesDir.listFiles().reversed()) {
-            Log.d("PATHS",f.toString())
             if(f.toString().contains("""JPEG_\d+_\d+.jpg""".toRegex()))
                 photos.add(f)
         }

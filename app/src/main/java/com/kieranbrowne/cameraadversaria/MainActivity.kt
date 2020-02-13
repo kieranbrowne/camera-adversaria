@@ -13,33 +13,22 @@ import android.hardware.camera2.CameraCaptureSession
 import java.io.File
 import java.io.FileOutputStream
 import android.content.Context
-import android.os.Build
-import android.support.annotation.RequiresApi
-import android.util.Log
-import android.Manifest.permission
 import android.support.v4.app.ActivityCompat
 import android.content.pm.PackageManager
 import android.support.v4.content.ContextCompat
-import android.support.v4.content.FileProvider
 import android.media.ImageReader
 import android.Manifest
 import android.view.TextureView
 import android.view.SurfaceHolder
 import java.nio.ByteBuffer
 import android.widget.Toast
-import android.content.ContentResolver;
 import android.graphics.*
 import android.media.Image
-import android.media.MediaScannerConnection
 import android.media.ThumbnailUtils
-import android.net.Uri
 import android.os.Environment
-import android.util.DisplayMetrics
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import jp.co.cyberagent.android.gpuimage.GPUImage
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageSepiaToneFilter
-import com.kieranbrowne.cameraadversaria.AdversarialFilter
 import java.lang.Exception
 
 
@@ -298,7 +287,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 open_gallery.alpha = 1.0f
 
             } catch (e: java.io.IOException) {
-                Log.e("ERROR", e.toString())
+
             } finally {
 
                 //val files = filesDir.listFiles();
@@ -329,7 +318,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
             } catch (e : Exception) {
-                Log.e("ERROR", "IT was null")
+
             }
 
             image.close();

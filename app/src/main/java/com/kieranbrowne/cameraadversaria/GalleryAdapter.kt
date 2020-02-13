@@ -41,7 +41,6 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
     private fun loadLabelList(activity: Activity): List<String> {
         val labels = ArrayList<String>()
         val reader = BufferedReader(InputStreamReader(activity.assets.open("labels_mobilenet_quant_v1_224.txt")))
-        Log.d("CHECK", activity.assets.open("labels_mobilenet_quant_v1_224.txt").toString())
         var line: String?
         while (true) {
             line = reader.readLine()
@@ -88,7 +87,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
         for (x in 0..DIM_IMG_SIZE_X-1) {
             for (y in 0..DIM_IMG_SIZE_Y-1) {
                 val v: Int = intValues[idx++]
-                //Log.d("idx", idx.toString())
+
                 imgData.putFloat( (((v shr 16) and 0xFF) - IMG_MEAN)/IMG_STD )
                 imgData.putFloat( (((v shr 8) and 0xFF) - IMG_MEAN)/IMG_STD )
                 imgData.putFloat( (((v) and 0xFF) - IMG_MEAN)/IMG_STD )
@@ -104,11 +103,9 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
 
 
-        //Log.d("LOAD", "loading model")
-
         model = Interpreter(loadModelFile(activity))
 
-        //Log.d("LOAD", "loading labels")
+
         labels = loadLabelList(activity)
 
 
@@ -236,7 +233,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
                 val bitmap = BitmapFactory.decodeFile(private_file)
                 val filteredBitmap = gpuImage.getBitmapWithFilterApplied(bitmap)
 
-                if(gpuImage != null) {
+                try {
 
                     val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Camera Adversaria")
                     val filtered = File(publicDir, "adversarial_"+private_file.split("/").last())
@@ -256,8 +253,8 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
                     output.close()
 
-                } else {
-                    Log.e("ERROR", "IT was null")
+                } catch (e : Exception) {
+
                 }
 
                 return filteredBitmap
@@ -323,11 +320,6 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
                     }
                 }
 
-                if(labels?.get(0) != null)
-                    Log.d("LABELS ", labels?.get(0))
-                else
-                    Log.d("LABELS ", "no label 0")
-                Log.d("LABELS ", labels?.size.toString())
 
                 // ...
                 return labels?.get(biggestidx).toString() + " " + "%.2f".format(biggest*100.0)+"%"
