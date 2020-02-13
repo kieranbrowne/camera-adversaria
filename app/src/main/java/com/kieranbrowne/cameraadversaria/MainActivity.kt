@@ -119,12 +119,6 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                         streamConfigurationMap.getOutputSizes(ImageFormat.JPEG)?.let { yuvSizes ->
                             val previewSize = yuvSizes.last()
 
-                            // cont.
-                            val displayRotation = windowManager.defaultDisplay.rotation
-                            val swappedDimensions = areDimensionsSwapped(displayRotation, cameraCharacteristics)// swap width and height if needed
-                            val rotatedPreviewWidth = if (swappedDimensions) previewSize.height else previewSize.width
-                            val rotatedPreviewHeight = if (swappedDimensions) previewSize.width else previewSize.height
-
                             imageReader = ImageReader.newInstance(previewSize.width*12, previewSize.height*12,
                                 ImageFormat.JPEG, 3)
                         }
@@ -146,12 +140,13 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                             buffer.get(bytes)
                             val bitmapImage : Bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null);
                             val thumbImage : Bitmap = ThumbnailUtils.extractThumbnail(bitmapImage, 64, 64);
-                            open_gallery.setImageBitmap(rotateBitmap(thumbImage, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat()));
+
+                            val orientation : Float = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)?.or(0)!!.toFloat()
+                            open_gallery.setImageBitmap(rotateBitmap(thumbImage, orientation));
 
 
 
-                            processImage(it,
-                                cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION).toFloat())
+                            processImage(it, orientation)
                         }
 
                     }, null)
@@ -159,7 +154,10 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                     // capture
                     val stillRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
                         .apply {
-                            addTarget(recordingSurface)
+                            recordingSurface?.let {
+                               addTarget(it)
+                            }
+
                         }
 
                     /// preview
@@ -178,8 +176,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                 object : CameraCaptureSession.CaptureCallback() {},
                                 null
                             )
-                            session?.capture(
-                                previewRequestBuilder?.build(),
+                            session.capture(
+                                previewRequestBuilder.build(),
                                 object : CameraCaptureSession.CaptureCallback() {},
                                 null
                             )
@@ -196,8 +194,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                                 anim.setFillAfter(true);
                                 surfaceView.startAnimation(anim);
 
-                                session?.capture(
-                                    stillRequestBuilder?.build(),
+                                session.capture(
+                                    stillRequestBuilder.build(),
                                     object : CameraCaptureSession.CaptureCallback() {},
                                     null
                                 )
@@ -303,7 +301,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 Log.e("ERROR", e.toString())
             } finally {
 
-                val files = filesDir.listFiles();
+                //val files = filesDir.listFiles();
                 output?.close()
             }
 
@@ -314,7 +312,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
             val adversarial_image = gpuImage.getBitmapWithFilterApplied(bmp)
 
-            if(gpuImage != null) {
+            try {
 
                 val adversarial_file = File(publicDir, "adversarial_"+private_file.toString().split("/").last())
 
@@ -330,7 +328,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
                 MediaStore.Images.Media.insertImage(getContentResolver(), adversarial_file.toString(), "Untitled" , "Camera Adversaria image");
 
 
-            } else {
+            } catch (e : Exception) {
                 Log.e("ERROR", "IT was null")
             }
 
