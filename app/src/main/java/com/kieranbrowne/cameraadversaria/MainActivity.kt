@@ -35,6 +35,7 @@ import java.lang.Exception
 class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
+
     var isRearCam : Boolean = true;
 
     lateinit var previewSurface: Surface
@@ -54,7 +55,9 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
         setContentView(R.layout.activity_main)
 
-        surfaceView.holder.addCallback(surfaceReadyCallback)
+        if(checkPermission()) {
+            surfaceView.holder.addCallback(surfaceReadyCallback)
+        }
 
         try {
             displayLatestImageThumb();
@@ -64,11 +67,9 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
     }
 
     private fun reopenCamera() {
-        if(checkPermission()) {
             if (previewSurface.isValid) {
                 openCamera()
             }
-        }
 
     }
 
@@ -296,7 +297,7 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
 
 
             val gpuImage = GPUImage(this)
-            gpuImage.setFilter(AdversarialFilter(0.0))
+            gpuImage.setFilter(AdversarialFilter(0.0, Math.random()))
             gpuImage.setImage(private_file)
 
             val adversarial_image = gpuImage.getBitmapWithFilterApplied(bmp)
@@ -399,6 +400,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 123)
+            //setContentView(R.layout.activity_main)
+            reopenCamera()
             return false
         } else {
             return true

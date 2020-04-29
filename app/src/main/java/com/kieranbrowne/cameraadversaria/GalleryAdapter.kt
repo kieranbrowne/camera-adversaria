@@ -227,7 +227,7 @@ class GalleryAdapter(private val photos: ArrayList<File>, val context: android.c
 
             override fun doInBackground(vararg params: Void?): Bitmap? {
                 val gpuImage = GPUImage(context)
-                gpuImage.setFilter(AdversarialFilter(amp))
+                gpuImage.setFilter(AdversarialFilter(amp,Math.random()))
                 // ...
 
                 val bitmap = BitmapFactory.decodeFile(private_file)
