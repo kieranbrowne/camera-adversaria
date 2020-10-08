@@ -2,6 +2,7 @@
 <html>
 <head>
 <title>Camera Adversaria</title>
+<meta charset="UTF-8"> 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -46,6 +47,14 @@
     color: white;
   }
 
+  .langs {
+    color: white;
+    font-family: monospace;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+  }
+
 
   @media screen and (max-width: 500px) {
   h1 {
@@ -58,14 +67,20 @@
     padding: 20px 3vh 0 3vh;
     text-align: left;
   }
+  .langs {
+    font-size: 24px;
+  }
   }
 </style>
 </head>
 <body>
+<span class="langs"><a href="?">en</a>|<a href="?lang=de">de</a></span>
 
 <p class="center extra-pad">
 <img src="ca-logo.png" width="200px"/>
 </p>
+
+<article id="lang-en">
 <p>
 <b>Camera Adversaria</b> is a mobile app designed to disrupt the automatic surveillance of personal photographs by technology companies. It achieves this by subtly changing the pixels in your photos to confuse image classification systems.
 </p>
@@ -79,13 +94,55 @@ Camera Adversaria applies a particular kind of filter, called an "adversarial pe
 You can learn more about how Camera Adversaria was built and why, by reading <a href="https://kieranbrowne.com/publications/camera_adversaria.pdf">the research paper</a> or watching <a href="https://youtu.be/cNGHZs47atU">the conference presentation</a>.  Alternatively, if you can read Kotlin, you can learn exactly how it works by reading <a href="https://github.com/kieranbrowne/camera-adversaria">the source code</a>. 
 </p>
 
-
 <h2>How to get it</h2>
 <p>Camera Adversaria is available to download now on Google Play.</p>
 <p class="center">
 <a href='https://play.google.com/store/apps/details?id=com.kieranbrowne.cameraadversaria&hl=en_US&gl=US&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="220px"/></a>
 </p>
+</article>
 
+<article id="lang-de" hidden="true">
+<p>
+<b>Camera Adversaria</b> ist eine Handyapp Entworfen um das automatische Überwachung von Bildern durch Technologiefirmen zu stören. 
+Es ändert subtil das Pixel deines Fotos um Bildklassifizierungssysteme zu verwirren.
+</p>
+
+<h2>Wie functioniert es</h2>
+<p>
+Camera Adversaria benutzt eine bestimmte Art von Bildfilter, namens "adversarial perturbation". Dieser filter ist optimiert um das Low-Level Pixelmustern die zeitgenössische KI systeme verwenden, um Bilder zu verstehen, zu stören.</p>
+<p>
+Sie können mehr um wie Camera Adversaria erbaut war und warum lernen, indem Sie <a href="https://kieranbrowne.com/publications/camera_adversaria.pdf">das Forschungspaper</a> lesen, oder <a href="https://youtu.be/cNGHZs47atU">die Konferenzpräsentation</a> anschauen.  Andernfalls, wenn sie Kotlin lesen können, lernen Sie genauso functioniert es indem Sie <a href="https://github.com/kieranbrowne/camera-adversaria">den Quellcode</a> lesen. 
+</p>
+
+<h2>Wie man es bekommt</h2>
+<p>Camera Adversaria ist jetzt verfügbar bei Google Play.</p>
+<p class="center">
+<a href='https://play.google.com/store/apps/details?id=com.kieranbrowne.cameraadversaria&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Jetzt bei Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/de_badge_web_generic.png'  width="220px"/></a>
+</p>
+</article>
+
+<script>
+var $_GET = {};
+if(document.location.toString().indexOf('?') !== -1) {
+    var query = document.location
+                   .toString()
+                   // get the query string
+                   .replace(/^.*?\?/, '')
+                   // and remove any existing hash string (thanks, @vrijdenker)
+                   .replace(/#.*$/, '')
+                   .split('&');
+
+    for(var i=0, l=query.length; i<l; i++) {
+       var aux = decodeURIComponent(query[i]).split('=');
+       $_GET[aux[0]] = aux[1];
+    }
+}
+if($_GET["lang"] == "de") {
+  document.getElementById("lang-en").hidden = true;
+  document.getElementById("lang-de").hidden = false;
+}
+
+</script>
 
 </body>
 </html>
